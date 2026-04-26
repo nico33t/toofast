@@ -190,9 +190,12 @@ case $ACTION in
     check_wrangler
     echo -e "${BLUE}👥 Branch/clienti attivi:${NC}"
     wrangler pages deployment list --project-name="$PROJECT" 2>/dev/null \
-      | awk '/[a-z0-9-]+\.'"$PROJECT"'\.pages\.dev/ {print}' \
+      | grep -Eo "https://[a-z0-9-]+\.$PROJECT\.pages\.dev|[a-z0-9-]+\.$PROJECT\.pages\.dev" \
+      | sed -E "s#https://##" \
+      | sed -E "s#\.$PROJECT\.pages\.dev##" \
+      | grep -v "^$PROJECT$" \
       | sort -u
-    ;;
+  ;;
 
   init)
     check_wrangler
