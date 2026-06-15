@@ -60,6 +60,24 @@ DESIGN.md from a brand template, e.g. `--design=stripe`).
    `<client>.<project>.pages.dev` (e.g. `tynk.nicolatomassini.pages.dev`). Share it, or
    `too card <client>` (one-pager) / `too qr <client>` (QR).
 
+## Hero style & layout (decide with the user)
+Pick the hero/layout that fits the business — ask if unsure, then confirm:
+- **Full-bleed image hero** (image covers the area, text + CTA overlaid, dark scrim for contrast) — emotion/brand: hospitality, fashion, security, real estate.
+- **Video hero** (muted, autoplay+loop, lightweight `poster`, lazy, pause on `prefers-reduced-motion`) — motion/atmosphere/product.
+- **Split hero** (text + visual side-by-side) — clarity: SaaS, B2B.
+- **Type-led minimal hero** — editorial, agencies, dev tools.
+Match style to audience and goal, never to fashion.
+
+## Eye-flow & conversion psychology (rules)
+- One job per page; **one primary CTA**, repeated — key message + CTA **above the fold**.
+- Lead the eye along the natural path (**F/Z pattern**): use size, contrast, whitespace and direction (faces/arrows point toward the CTA).
+- Hierarchy: outcome headline → subhead → proof → CTA. **Outcome-first, not feature-first.**
+- **Trust early**: logos, reviews, numbers near the hero; reduce risk ("no card needed", guarantees).
+- Cognitive ease: short lines, ~5th–7th grade reading level, scannable bento/sections, generous spacing.
+- Persuasion used **honestly**: social proof, authority, reciprocity (free value), commitment (small first step); scarcity/urgency only if true.
+- **Speed converts**: every second of load loses conversions — WebP, no render-blocking fonts, defer JS.
+- Accessibility = more customers: contrast ≥ 4.5:1, visible focus, captions/poster on video.
+
 ## All commands
 **Deploy** — `too push <dir> <client>` · `too ship <client>` (build+deploy+QR+open) · `too bp <client>` (build+push)
 **Time Machine** — `too rollback <client> [ts]` · `too snapshots <client>`
