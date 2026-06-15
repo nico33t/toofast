@@ -21,19 +21,21 @@
 <header class="nav">
   <div class="brand"><span class="brand__bolt">⚡</span> nt-deploy</div>
   <nav class="nav__links">
-    <a href="#features">Features</a>
-    <a href="#kill">Time Machine</a>
-    <a href="#install">Install</a>
+    <a href="#features" data-i18n="nav.features">Features</a>
+    <a href="#kill" data-i18n="nav.tm">Time Machine</a>
+    <a href="#install" data-i18n="nav.install">Install</a>
+    <div class="lang" id="lang">
+      <button data-lang="en">EN</button><button data-lang="it">IT</button><button data-lang="de">DE</button><button data-lang="es">ES</button>
+    </div>
     <a class="nav__gh" href="https://github.com/nico33t/nt-deploy" target="_blank" rel="noopener">GitHub ↗</a>
   </nav>
 </header>
 
 <main>
   <section class="hero">
-    <div class="badge">v2.0 · open source · zero dependencies</div>
-    <h1>Ship your site in <span class="grad">one command</span>.</h1>
-    <p class="lede">Deploy to Cloudflare Pages, <b>instant rollback</b>, PageSpeed audits,
-       a light GUI and a complete dev toolkit. All from your terminal — featherweight.</p>
+    <div class="badge" data-i18n="hero.badge">v2.0 · open source · zero dependencies</div>
+    <h1><span data-i18n="hero.h1a">Ship your site in</span> <span class="grad" data-i18n="hero.h1b">one command</span>.</h1>
+    <p class="lede" data-i18n="hero.lede">Deploy to Cloudflare Pages, <b>instant rollback</b>, PageSpeed audits, a light GUI and a complete dev toolkit. All from your terminal — featherweight.</p>
 
     <div class="terminal" role="img" aria-label="Terminal example">
       <div class="terminal__bar"><span></span><span></span><span></span><em>zsh — nt-deploy</em></div>
@@ -41,46 +43,57 @@
 <span class="c-dim">🔨 Building with pnpm…  📦 Output: dist  🚀 Deploy → client</span>
 <span class="c-gr">✅ Live: https://client.yourproject.pages.dev</span>
 <span class="c-dim">📸 snapshot saved (rollback available)</span>
-<span class="c-dim">$</span> <span class="c-cy">nt-rollback</span> client   <span class="c-dim"># ⏪ back to the previous deploy</span>
-<span class="c-dim">$</span> <span class="c-cy">nt-audit</span> client      <span class="c-dim"># 🔬 real PageSpeed score</span></pre>
+<span class="c-dim">$</span> <span class="c-cy">nt-rollback</span> client
+<span class="c-dim">$</span> <span class="c-cy">nt-audit</span> client</pre>
     </div>
 
     <div class="cta">
       <button class="copy" data-cmd="curl -fsSL https://raw.githubusercontent.com/nico33t/nt-deploy/main/install.sh | bash">
         <code>curl -fsSL …/install.sh | bash</code><span class="copy__ico">⧉</span>
       </button>
-      <a class="ghost" href="https://github.com/nico33t/nt-deploy" target="_blank" rel="noopener">View on GitHub</a>
+      <a class="ghost" href="https://github.com/nico33t/nt-deploy" target="_blank" rel="noopener" data-i18n="hero.gh">View on GitHub</a>
     </div>
   </section>
 
   <section class="stats">
-    <div><b>30+</b><span>commands</span></div>
-    <div><b>1</b><span>dependency (wrangler)</span></div>
-    <div><b>~0</b><span>idle RAM</span></div>
-    <div><b>∞</b><span>local rollbacks</span></div>
+    <div><b>30+</b><span data-i18n="stats.cmds">commands</span></div>
+    <div><b>1</b><span data-i18n="stats.dep">dependency (wrangler)</span></div>
+    <div><b>~0</b><span data-i18n="stats.ram">idle RAM</span></div>
+    <div><b>∞</b><span data-i18n="stats.rb">local rollbacks</span></div>
   </section>
 
   <section id="features" class="features">
-    <h2>A Swiss army knife for the web</h2>
+    <h2 data-i18n="feat.h2">A Swiss army knife for the web</h2>
     <div class="cards">
-      <article class="card"><div class="card__ico">🚀</div><h3>Deploy in one command</h3><p>Static folder or automatic build (npm/pnpm/yarn/bun). One branch per client, a URL ready to share.</p></article>
-      <article class="card card--hot"><div class="card__ico">⏪</div><h3>Time Machine</h3><p>Every deploy is archived locally. <b>Real rollback</b> to a previous version — something wrangler alone cannot do.</p></article>
-      <article class="card"><div class="card__ico">🔬</div><h3>PageSpeed audit</h3><p>Pre-test with a real score (Google Lighthouse engine): Performance, SEO, Accessibility and Core Web Vitals.</p></article>
-      <article class="card"><div class="card__ico">🪟</div><h3>Featherweight GUI</h3><p>A browser panel at <code>nt.local</code> to manage clients, projects, snapshots and settings. No Electron — pure stdlib.</p></article>
-      <article class="card"><div class="card__ico">📊</div><h3>Traffic &amp; visits</h3><p>Enable Web Analytics with one command and read your site's visit stats.</p></article>
-      <article class="card"><div class="card__ico">🧰</div><h3>Offline toolkit</h3><p>Local server, scaffold, size report, zip, QR codes, health-check, client notes. Useful even without Cloudflare.</p></article>
+      <article class="card"><div class="card__ico">🚀</div><h3 data-i18n="feat.deploy.t">Deploy in one command</h3><p data-i18n="feat.deploy.d">Static folder or automatic build (npm/pnpm/yarn/bun). One branch per client, a URL ready to share.</p></article>
+      <article class="card card--hot"><div class="card__ico">⏪</div><h3 data-i18n="feat.tm.t">Time Machine</h3><p data-i18n="feat.tm.d">Every deploy is archived locally. <b>Real rollback</b> to a previous version — something wrangler alone cannot do.</p></article>
+      <article class="card"><div class="card__ico">🔬</div><h3 data-i18n="feat.audit.t">PageSpeed audit</h3><p data-i18n="feat.audit.d">Pre-test with a real score (Google Lighthouse engine): Performance, SEO, Accessibility and Core Web Vitals.</p></article>
+      <article class="card"><div class="card__ico">🪟</div><h3 data-i18n="feat.gui.t">Featherweight GUI</h3><p data-i18n="feat.gui.d">A browser panel at <code>nt.local</code> to manage clients, projects, snapshots and settings. No Electron — pure stdlib.</p></article>
+      <article class="card"><div class="card__ico">📊</div><h3 data-i18n="feat.traffic.t">Traffic &amp; visits</h3><p data-i18n="feat.traffic.d">Enable Web Analytics with one command and read your site's visit stats.</p></article>
+      <article class="card"><div class="card__ico">🧰</div><h3 data-i18n="feat.toolkit.t">Offline toolkit</h3><p data-i18n="feat.toolkit.d">Local server, scaffold, size report, zip, QR codes, health-check, client notes. Useful even without Cloudflare.</p></article>
+    </div>
+  </section>
+
+  <section id="who" class="who">
+    <h2 data-i18n="who.h2">What it's for &amp; who it's for</h2>
+    <p class="lede" data-i18n="who.lead">nt-deploy turns "I need to put this website online" into a single command — then gives you everything around it: per-client preview URLs, performance audits before launch, traffic stats, and a safety net that lets you undo a bad deploy in seconds.</p>
+    <div class="cards">
+      <article class="card"><div class="card__ico">🧑‍💻</div><h3 data-i18n="who.free.t">Freelancers &amp; agencies</h3><p data-i18n="who.free.d">Deliver each client a clean preview URL (<code>client.you.pages.dev</code>), send the link, and roll back instantly if they want the previous version. Keep per-client notes too.</p></article>
+      <article class="card"><div class="card__ico">⚙️</div><h3 data-i18n="who.dev.t">Web developers</h3><p data-i18n="who.dev.d">Skip the dashboard. Build and deploy from the terminal, audit Core Web Vitals before going live, tail logs and check health — without leaving your shell.</p></article>
+      <article class="card"><div class="card__ico">🚀</div><h3 data-i18n="who.indie.t">Indie hackers &amp; makers</h3><p data-i18n="who.indie.d">Ship landing pages, prototypes and side projects in seconds. Scaffold a starter, serve it locally, deploy, get a QR to test on your phone, and watch the traffic.</p></article>
+      <article class="card"><div class="card__ico">👥</div><h3 data-i18n="who.team.t">Small teams</h3><p data-i18n="who.team.d">One consistent deploy workflow for everyone, with local snapshots as a safety net and confirmations before anything destructive (production overwrite, delete).</p></article>
     </div>
   </section>
 
   <section id="kill" class="kill">
     <div class="kill__txt">
-      <div class="badge badge--hot">★ kill feature</div>
-      <h2>Rollback wrangler doesn't have</h2>
-      <p>Cloudflare offers no CLI rollback for Pages. nt-deploy archives every push locally and lets you <b>restore any version</b> in seconds.</p>
+      <div class="badge badge--hot" data-i18n="kill.badge">★ kill feature</div>
+      <h2 data-i18n="kill.h2">Rollback wrangler doesn't have</h2>
+      <p data-i18n="kill.p">Cloudflare offers no CLI rollback for Pages. nt-deploy archives every push locally and lets you <b>restore any version</b> in seconds.</p>
       <ul>
-        <li><code>nt-snapshots client</code> — the deploy history</li>
-        <li><code>nt-rollback client</code> — back to the previous one</li>
-        <li><code>nt-rollback client 1700000000</code> — to an exact version</li>
+        <li><code>nt-snapshots client</code> — <span data-i18n="kill.l1">the deploy history</span></li>
+        <li><code>nt-rollback client</code> — <span data-i18n="kill.l2">back to the previous one</span></li>
+        <li><code>nt-rollback client 1700000000</code> — <span data-i18n="kill.l3">to an exact version</span></li>
       </ul>
     </div>
     <pre class="kill__term"><span class="c-cy">$ nt-snapshots</span> client
@@ -88,23 +101,22 @@
   1719490000  2026-06-15 10:02  18K  <span class="c-am">(rollback →)</span>
   1719400000  2026-06-14 22:15  17K
 <span class="c-cy">$ nt-rollback</span> client
-  ⏪ Rolling back to snapshot from 2026-06-15 10:02
   <span class="c-gr">✅ Rollback complete</span></pre>
   </section>
 
   <section id="install" class="install">
-    <h2>Install in 10 seconds</h2>
-    <p class="lede">Only needs Node (for wrangler). The script auto-updates.</p>
+    <h2 data-i18n="install.h2">Install in 10 seconds</h2>
+    <p class="lede" data-i18n="install.lede">Only needs Node (for wrangler). The script auto-updates.</p>
     <button class="copy copy--big" data-cmd="curl -fsSL https://raw.githubusercontent.com/nico33t/nt-deploy/main/install.sh | bash">
       <code>curl -fsSL https://raw.githubusercontent.com/nico33t/nt-deploy/main/install.sh | bash</code><span class="copy__ico">⧉</span>
     </button>
-    <div class="next"><span><code>nt-init</code> login + project</span><span><code>nt-ship</code> build, deploy, done</span><span><code>nt-help</code> every command</span></div>
+    <div class="next"><span><code>nt-init</code> <span data-i18n="install.s1">login + project</span></span><span><code>nt-ship</code> <span data-i18n="install.s2">build, deploy, done</span></span><span><code>nt-help</code> <span data-i18n="install.s3">every command</span></span></div>
   </section>
 </main>
 
 <footer class="foot">
   <span><span class="brand__bolt">⚡</span> nt-deploy</span>
-  <span class="foot__dim">deploy · rollback · audit · gui — open source</span>
+  <span class="foot__dim" data-i18n="foot.dim">deploy · rollback · audit · gui — open source</span>
   <a href="https://github.com/nico33t/nt-deploy" target="_blank" rel="noopener">github.com/nico33t/nt-deploy</a>
 </footer>
 

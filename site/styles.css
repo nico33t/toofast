@@ -18,7 +18,16 @@ code{font-family:var(--mono)}
 .nav__links{display:flex;align-items:center;gap:clamp(12px,3vw,28px);font-size:14px;color:var(--dim)}
 .nav__links a:hover{color:var(--ink)}
 .nav__gh{color:var(--cy)!important;border:1px solid var(--b);padding:7px 14px;border-radius:100px}
-@media(max-width:640px){.nav__links a:not(.nav__gh){display:none}}
+.lang{display:flex;gap:2px;background:var(--panel);border:1px solid var(--b);border-radius:100px;padding:3px}
+.lang button{border:0;background:transparent;color:var(--dim);font:inherit;font-size:12px;font-weight:600;padding:5px 9px;border-radius:100px;cursor:pointer}
+.lang button.on{background:var(--cy);color:#04060f}
+.lang button:hover:not(.on){color:var(--ink)}
+@media(max-width:760px){.nav__links a:not(.nav__gh){display:none}}
+
+.who{padding:50px 0}
+.who .lede{margin-bottom:34px}
+.who .cards{grid-template-columns:repeat(2,1fr)}
+@media(max-width:640px){.who .cards{grid-template-columns:1fr}}
 
 main{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:0 clamp(18px,5vw,48px)}
 .hero{text-align:center;padding:clamp(40px,8vw,90px) 0 30px}
