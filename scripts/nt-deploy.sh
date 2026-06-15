@@ -461,6 +461,78 @@ npm install && npm run dev    # preview before writing features
 - Static/SPA build: \`too push dist <client>\`. Full-stack Next.js: deploy on Vercel.
 MD
 }
+# Read colors from $1/DESIGN.md and apply them to the site's CSS :root (so each
+# DESIGN.md produces its own brand colors). Best-effort, Python-based.
+nt_apply_palette(){
+  have python3 || return 0
+  python3 - "$1" <<'PY'
+import sys, re, os
+d = sys.argv[1]; dm = os.path.join(d, "DESIGN.md")
+cssf = os.path.join(d, "styles.css")
+if not os.path.exists(cssf): cssf = os.path.join(d, "src", "style.css")
+if not os.path.exists(dm) or not os.path.exists(cssf): sys.exit(0)
+txt = open(dm, encoding="utf-8", errors="replace").read()
+hexes = re.findall(r'#[0-9a-fA-F]{6}\b', txt)
+if not hexes: sys.exit(0)
+def rgb(h): h = h[1:]; return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+def lum(h): r, g, b = [c/255 for c in rgb(h)]; return 0.2126*r + 0.7152*g + 0.0722*b
+def sat(h):
+    r, g, b = rgb(h); mx = max(r, g, b); mn = min(r, g, b)
+    return 0 if mx == 0 else (mx - mn) / mx
+def darken(h, f=0.82): r, g, b = rgb(h); return "#%02x%02x%02x" % (int(r*f), int(g*f), int(b*f))
+seen = []
+for h in hexes:
+    if h.lower() not in seen: seen.append(h.lower())
+colored = [h for h in seen if sat(h) > 0.35 and 0.08 < lum(h) < 0.92]
+neutrals = [h for h in seen if sat(h) <= 0.18]
+darks = sorted(neutrals, key=lum); lights = sorted(neutrals, key=lum, reverse=True)
+def pick(lst, i, fb): return lst[i] if len(lst) > i else fb
+def labeled(keys, avoid=()):
+    for ln in txt.splitlines():
+        low = ln.lower()
+        if any(k in low for k in keys) and not any(a in low for a in avoid):
+            m = re.search(r'#[0-9a-fA-F]{6}', ln)
+            c = m.group(0).lower() if m else ""
+            if c and sat(c) > 0.2 and 0.08 < lum(c) < 0.9: return c
+    return None
+AV = ("error", "success", "danger", "warning", "warn", "destructive", "semantic")
+prim = labeled(("primary", "brand", "accent", "cta", "action", "link"), AV) or (colored[0] if colored else "#2563eb")
+acc = labeled(("accent", "secondary"), AV) or next((c for c in colored if c != prim), prim)
+# Theme is decided by the BACKGROUND/canvas color, NOT by the mere presence of dark
+# colors (those are usually text). Default to LIGHT unless the background is dark.
+bgc = None
+for ln in txt.splitlines():
+    low = ln.lower()
+    if any(k in low for k in ("background", "canvas", "page bg", "--bg", "base color", "body bg", "surface base")):
+        m = re.search(r'#[0-9a-fA-F]{6}', ln)
+        if m: bgc = m.group(0).lower(); break
+if bgc is None:
+    bgc = lights[0] if (lights and lum(lights[0]) > 0.85) else "#ffffff"
+dark = lum(bgc) < 0.32
+if dark:
+    bg = bgc; surface = (pick(darks, 1, "#1c1917") if darks else "#1c1917"); fg = (max(seen, key=lum) if lum(max(seen, key=lum)) > 0.6 else "#e7e5e4")
+    muted = pick([h for h in neutrals if 0.3 < lum(h) < 0.7], 0, "#a8a29e"); border = pick(darks, 2, surface)
+    scheme = "dark"
+else:
+    bg = bgc if lum(bgc) > 0.92 else "#ffffff"
+    surface = pick([h for h in lights if 0.9 < lum(h) < 0.995], 0, "#f6f7f9"); fg = (min(seen, key=lum) if lum(min(seen, key=lum)) < 0.4 else "#14181f")
+    muted = pick([h for h in neutrals if 0.3 < lum(h) < 0.62], 0, "#5b6573"); border = pick([h for h in lights if 0.85 < lum(h) < 0.97], 0, "#e5e8ec")
+    scheme = "light"
+root = ("--bg:%s;--surface:%s;--fg:%s;--muted:%s;--border:%s;--primary:%s;--primary-h:%s;--accent:%s;--accent2:%s;--max:1100px;--r:14px"
+        % (bg, surface, fg, muted, border, prim, darken(prim), acc, prim))
+css = open(cssf, encoding="utf-8").read()
+css2 = re.sub(r':root\{[^}]*--r:[^}]*\}', ':root{' + root + '}', css, count=1)
+if css2 != css:
+    open(cssf, "w", encoding="utf-8").write(css2)
+ix = os.path.join(d, "index.html")
+if os.path.exists(ix):
+    h = open(ix, encoding="utf-8").read()
+    h = re.sub(r'(<meta name="theme-color" content=")[^"]*(">)', r'\g<1>' + bg + r'\g<2>', h)
+    h = re.sub(r'(<meta name="color-scheme" content=")[^"]*(">)', r'\g<1>' + scheme + r'\g<2>', h)
+    open(ix, "w", encoding="utf-8").write(h)
+print("   palette from DESIGN.md applied: %s theme · primary %s · bg %s" % (scheme, prim, bg))
+PY
+}
 nt_devserve(){
   [ "$3" = yes ] || return 0
   if [ "$2" = vite ]; then
@@ -819,6 +891,7 @@ CSS
       echo -e "   ${DIM}files:${NC} index.html · src/main.js · src/style.css · package.json · DESIGN.md · AGENTS.md · CLAUDE.md · public/(_headers, robots, sitemap, manifest, favicon, 404)"
       echo -e "   ${DIM}dev:${NC} cd $SAFE && npm install && npm run dev   ${DIM}·  build+ship:${NC} too bp $SAFE"
       [ -n "$DESIGN_BRAND" ] && { "$0" design add "$DESIGN_BRAND" "$SAFE/DESIGN.md"; rm -f "$SAFE/DESIGN.md.bak"; }
+      nt_apply_palette "$SAFE"
       nt_devserve "$SAFE" vite "$SERVE"
       exit 0
     fi
@@ -1105,6 +1178,7 @@ HDR
     echo -e "   ${DIM}files:${NC} index.html · styles.css · app.js · assets/hero.svg · DESIGN.md · AGENTS.md · CLAUDE.md · privacy/cookie/terms · _headers · robots · sitemap · manifest · favicon · 404"
     echo -e "   ${DIM}preview:${NC} too serve $SAFE   ${DIM}·  ship:${NC} too push $SAFE $SAFE   ${DIM}·  audit:${NC} too audit $SAFE"
     [ -n "$DESIGN_BRAND" ] && { "$0" design add "$DESIGN_BRAND" "$SAFE/DESIGN.md"; rm -f "$SAFE/DESIGN.md.bak"; }
+    nt_apply_palette "$SAFE"
     nt_devserve "$SAFE" plain "$SERVE"
     ;;
 
@@ -1212,6 +1286,14 @@ PY
     echo -e "   ${DIM}next:${NC} 1) research market  2) fill the plan  3) lock the killer feature  4) build  5) preview (too edit)  6) audit  7) ship"
     [ "$SERVE" = yes ] && [ "$STACK" != minimal ] && ( cd "$SAFE" && have npm && { npm install && npm run dev; } )
     exit 0
+    ;;
+
+  apply-design|design-apply|theme)
+    DIR="${1:-.}"; [ -d "$DIR" ] || { err "Folder '$DIR' not found"; exit 1; }
+    [ -f "$DIR/DESIGN.md" ] || { err "No DESIGN.md in '$DIR' — add one (e.g. too design add <brand>)"; exit 1; }
+    info "🎨 Applying DESIGN.md colors to ${BOLD}$DIR${NC}…"
+    nt_apply_palette "$DIR"
+    echo -e "   ${DIM}Colors updated. Structure/components: rebuild from DESIGN.md as the brand needs.${NC}"
     ;;
 
   new)
@@ -1628,6 +1710,7 @@ ${BOLD}TOOLKIT${NC} ${DIM}(works without Cloudflare too)${NC}
   too create [client]         Premium scaffold (DESIGN.md, AGENTS.md, _headers, manifest…) tuned for top PageSpeed
   too create-saas [name]      Full SaaS scaffold (next-forge / Vite) + business plan PDF + killer feature
   too design list|add <brand> Fetch a brand DESIGN.md from the community library (Stripe, Linear, Notion…)
+  too apply-design [dir]     Re-color a site from its DESIGN.md (run after you swap DESIGN.md)
   too new [name]              Minimal starter site, ready to deploy
   too build                   Run the build and show its size
   too size [dir]              Output weight report + top files

@@ -78,6 +78,17 @@ Match style to audience and goal, never to fashion.
 - **Speed converts**: every second of load loses conversions — WebP, no render-blocking fonts, defer JS.
 - Accessibility = more customers: contrast ≥ 4.5:1, visible focus, captions/poster on video.
 
+## Make each site unique (don't ship the default template)
+- `too create` is a STARTING scaffold, not the final site. Reason like a senior UI/UX designer and
+  rebuild it for THIS brand: colors, type, hero style, sections, copy and imagery.
+- **Colors come from DESIGN.md** — run `too apply-design <dir>` (or `--design=<brand>` at create) so
+  the palette matches the brand; theme follows the brand's BACKGROUND (light unless the bg is dark).
+- **If the client already has a website**, inspect it first (`too check`/`too audit` + look at it) and
+  carry over real brand colors, logo, tone and structure.
+- **Animations**: purposeful and subtle — staggered reveal on scroll, gentle hover/press states,
+  smooth focus; 120–220ms, eased; honor `prefers-reduced-motion`. Never decorative noise.
+- Vary structure to fit the business — section order, hero type, density — so no two sites look the same.
+
 ## SaaS rule (`too create-saas`)
 When building a SaaS, treat these as the PRIMARY points and call them out:
 - **Docker-first & scalability**: a stateless container (Dockerfile + docker-compose are generated); scale horizontally (`--scale app=N` → k8s/Fly/ECS); multi-tenant by default; rate limits + billing alerts; observability.
