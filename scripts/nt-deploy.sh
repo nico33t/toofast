@@ -1,9 +1,9 @@
 #!/bin/bash
-# nt-deploy: the web super-tool. Cloudflare Pages deploys + a full dev toolkit.
-# https://github.com/nico33t/nt-deploy
+# toofast (formerly nt-deploy): the web super-tool. Sites & SaaS from idea to live.
+# https://github.com/nico33t/toofast   ·   commands: toofast | tf | nt | nt-*
 
-VERSION="2.0.0"
-REPO_RAW="https://raw.githubusercontent.com/nico33t/nt-deploy/main"
+VERSION="3.0.0"
+REPO_RAW="https://raw.githubusercontent.com/nico33t/toofast/main"
 
 CONFIG_DIR="$HOME/.nt-tools"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -55,8 +55,8 @@ banner() {
   echo -e "${BOLD}${CYAN}"
   echo "    ┏┓╋ ┏┫┏┓┏┓┃┏┓┓┏"
   echo -e "    ┛┗┗━┗┻┗━┣┛┗┛┗━┗┛   ⚡${NC}"
-  echo -e "${BOLD} nt-deploy ${DIM}v$VERSION${NC} ${DIM}— ship your site in ${NC}${BOLD}one command${NC}${DIM}, and a lot more${NC}"
-  echo -e " ${DIM}https://github.com/nico33t/nt-deploy${NC}\n"
+  echo -e "${BOLD} ⚡ TooFast ${DIM}v$VERSION${NC} ${DIM}— sites & SaaS from idea to live, ${NC}${BOLD}fast${NC}"
+  echo -e " ${DIM}https://github.com/nico33t/toofast  ·  commands: toofast | tf | nt-*${NC}\n"
 }
 err(){ echo -e "${RED}❌ $1${NC}"; }; ok(){ echo -e "${GREEN}✅ $1${NC}"; }
 info(){ echo -e "${BLUE}$1${NC}"; }; warn(){ echo -e "${YELLOW}$1${NC}"; }
@@ -343,6 +343,119 @@ MD
 }
 
 # optional dev server with live reload. \$1=dir \$2=stack \$3=serve(yes|no)
+nt_chrome(){  # echo path to a Chromium-based browser, or empty
+  local c
+  for c in "$NT_CHROME" "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" "/Applications/Chromium.app/Contents/MacOS/Chromium" "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser" "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"; do
+    [ -n "$c" ] && [ -x "$c" ] && { echo "$c"; return; }; done
+  for c in google-chrome chromium chromium-browser brave-browser; do have "$c" && { command -v "$c"; return; }; done
+  echo ""
+}
+# SaaS planning + research docs (templates the agent fills). $1=dir
+nt_saas_docs(){
+  cat > "$1/BUSINESS_PLAN.md" <<MD
+# Business Plan — $NAME
+
+> Template — the AI agent fills this WITH the user, then exports BUSINESS_PLAN.pdf.
+
+## 1. Problem
+- What painful, frequent, expensive problem does $NAME solve? For whom?
+
+## 2. Solution
+- The product in one sentence. The core workflow. Why now.
+
+## 3. Ideal customer (ICP)
+- Segment, role, company size, where they hang out.
+
+## 4. Market & potential
+- TAM / SAM / SOM (estimate + source). Trend. Why it's growing.
+
+## 5. Competitors
+- See COMPETITORS.md. Summarize the 3 closest and our edge.
+
+## 6. Killer feature
+- See KILLER_FEATURE.md. The one thing rivals don't have.
+
+## 7. Business model
+- Pricing tiers, free trial vs freemium, expected ACV / MRR path.
+
+## 8. Go-to-market
+- See LAUNCH.md. First 100 users plan, channels, content.
+
+## 9. Roadmap
+- MVP (weeks 1–4), v1, v2. What's explicitly out of scope.
+
+## 10. Risks & mitigations
+- Top 3 risks (market, tech, legal) and how we de-risk.
+MD
+  cat > "$1/COMPETITORS.md" <<MD
+# Competitors — $NAME
+
+| Competitor | What they do | Pricing | Strength | Weakness | Our edge |
+|---|---|---|---|---|---|
+|  |  |  |  |  |  |
+|  |  |  |  |  |  |
+|  |  |  |  |  |  |
+
+> Agent: research the real market (web). Be specific and honest. Our edge must be defensible.
+MD
+  cat > "$1/KILLER_FEATURE.md" <<MD
+# Killer feature — $NAME
+
+> Every SaaS built here MUST ship one killer feature competitors don't have.
+
+## The feature
+- One sentence:
+
+## Why it's a killer
+- [ ] 10x better at one job (not 10% better)
+- [ ] Defensible (data, workflow lock-in, integration, or speed others can't match)
+- [ ] Demoable in < 30 seconds
+- [ ] Tied directly to the core value, not a gimmick
+
+## How we build it first
+- The MVP slice that proves it, and how we show it on the landing page.
+MD
+  cat > "$1/LAUNCH.md" <<MD
+# Launch checklist — $NAME
+
+## Validate before building
+- [ ] Talked to 5+ real prospects; confirmed the problem and willingness to pay.
+
+## Build foundations
+- [ ] Multi-tenant from day one (right default for ~90% of SaaS).
+- [ ] Auth + billing (Stripe) + transactional email wired early.
+- [ ] Hard rate limits + billing alerts on every paid API (avoid runaway bills).
+- [ ] GDPR basics now; SOC 2 groundwork before enterprise asks.
+
+## Landing page (outcome-driven, converts)
+- [ ] Hero states the OUTCOME + who it's for in one line; one primary CTA.
+- [ ] Show transformation, not a feature list; interactive demo / product tour.
+- [ ] Social proof (logos, testimonials, metrics). Bento grid for features.
+- [ ] Mobile-first; load < 2–3s; copy at a 5th–7th grade reading level.
+
+## Launch
+- [ ] Analytics + key events; feedback channel.
+- [ ] Channels: warm list, communities, Product Hunt, content/SEO, partnerships.
+- [ ] Day-1 monitoring: errors, latency, signups, churn.
+MD
+  cat > "$1/SETUP.md" <<MD
+# Setup — $NAME
+
+## Tailwind + shadcn/ui (Vite)
+\`\`\`bash
+npm i -D tailwindcss postcss autoprefixer && npx tailwindcss init -p
+npx shadcn@latest init        # then: npx shadcn@latest add button card input ...
+\`\`\`
+
+## Run
+\`\`\`bash
+npm install && npm run dev    # preview before writing features
+\`\`\`
+
+## Deploy
+- Static/SPA build: \`nt-push dist <client>\`. Full-stack Next.js: deploy on Vercel.
+MD
+}
 nt_devserve(){
   [ "$3" = yes ] || return 0
   if [ "$2" = vite ]; then
@@ -482,7 +595,7 @@ case $ACTION in
   copy) URL=$(url_for "$(sanitize_branch "${1:-main}")"); if have pbcopy; then echo "$URL"|pbcopy; elif have xclip; then echo "$URL"|xclip -selection clipboard; else warn "⚠️ clipboard unavailable"; fi; ok "📋 $URL" ;;
 
   # ───── PAGESPEED PRE-TEST (Google Lighthouse engine, same as pagespeed.web.dev) ─────
-  audit|pagespeed|test)
+  audit|pagespeed)
     A="${1:-main}"; STRAT="${2:-mobile}"
     case "$A" in http*) URL="$A";; *) URL=$(url_for "$(sanitize_branch "$A")");; esac
     need_jq || exit 1; have curl || { err "curl missing"; exit 1; }
@@ -638,7 +751,7 @@ case $ACTION in
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=()
-  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'self'; form-action 'self'
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 HDR
@@ -684,8 +797,8 @@ document.getElementById('y').textContent = new Date().getFullYear();
 JS
       cat > "$SAFE/src/style.css" <<'CSS'
 *,*::before,*::after{box-sizing:border-box;margin:0}
-:root{--bg:#0b1020;--fg:#e6f0ff;--muted:#9fb0d0;--accent:#6d4aff;--accent2:#35e8ff;--max:1080px}
-@media (prefers-color-scheme:light){:root{--bg:#fff;--fg:#0b1020;--muted:#5a6b88}}
+:root{--bg:#fff;--fg:#0b1020;--muted:#5a6b88;--accent:#6d4aff;--accent2:#35e8ff;--max:1080px}
+/* Light by default. Dark opt-in: @media (prefers-color-scheme:dark){:root{--bg:#0b1020;--fg:#e6f0ff;--muted:#9fb0d0}} */
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;min-height:100dvh;display:flex;flex-direction:column}
 img{max-width:100%;height:auto;display:block}
 .skip{position:absolute;left:-999px}.skip:focus{left:12px;top:12px;background:#fff;color:#000;padding:8px;border-radius:8px}
@@ -809,7 +922,8 @@ SVG
         <p class="lede">Swap this illustration for a screenshot or photo. Keep images light —
           run <code>nt-images</code> to convert them to WebP automatically.</p>
         <a class="btn btn--ghost" href="#contact">See more →</a></div>
-      <img class="panel reveal" src="/assets/hero.svg" alt="" width="640" height="480" loading="lazy">
+      <!-- DRAFT placeholder photo (royalty-free, Lorem Picsum). Replace with a real/self-hosted image, then run nt-images. -->
+      <img class="panel reveal" src="https://picsum.photos/seed/$SAFE/1200/800" alt="Placeholder — replace with your image" width="1200" height="800" loading="lazy">
     </section>
 
     <section class="stats reveal">
@@ -841,7 +955,8 @@ HTML
 *,*::before,*::after{box-sizing:border-box;margin:0}
 :root{--bg:#fff;--surface:#f6f7f9;--fg:#14181f;--muted:#5b6573;--border:#e5e8ec;
  --primary:#2563eb;--primary-h:#1e51c8;--accent:#6d4aff;--accent2:#35e8ff;--max:1100px;--r:14px}
-@media (prefers-color-scheme:dark){:root{--bg:#0b1020;--surface:#13182a;--fg:#e9eefb;--muted:#9fb0d0;--border:#222a44}}
+/* Default theme: LIGHT (preferred unless the client asks for dark).
+   To opt into auto dark, add: @media (prefers-color-scheme:dark){:root{--bg:#0b1020;--surface:#13182a;--fg:#e9eefb;--muted:#9fb0d0;--border:#222a44}} */
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased}
 img{max-width:100%;height:auto;display:block}a{color:inherit;text-decoration:none}
@@ -913,7 +1028,7 @@ JS
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=()
-  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'self'; form-action 'self'
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 /styles.css
@@ -927,6 +1042,75 @@ HDR
     echo -e "   ${DIM}preview:${NC} nt-serve $SAFE   ${DIM}·  ship:${NC} nt-push $SAFE $SAFE   ${DIM}·  audit:${NC} nt-audit $SAFE"
     [ -n "$DESIGN_BRAND" ] && { "$0" design add "$DESIGN_BRAND" "$SAFE/DESIGN.md"; rm -f "$SAFE/DESIGN.md.bak"; }
     nt_devserve "$SAFE" plain "$SERVE"
+    ;;
+
+  create-saas|saas|saas-new)
+    banner
+    NAME="${1:-saas}"; SAFE=$(sanitize_branch "$NAME"); URL=$(url_for "$SAFE")
+    STACK=""; SERVE=""
+    for a in "${@:2}"; do case "$a" in
+      --next-forge|--nextforge) STACK=nextforge;; --vite) STACK=vite;; --minimal|--static) STACK=minimal;; --serve) SERVE=yes;;
+    esac; done
+    if [ -z "$STACK" ]; then
+      if [ -t 0 ]; then
+        echo -e "${BOLD}SaaS stack for '$SAFE':${NC}"
+        echo "  1) next-forge  — Next.js + shadcn monorepo (recommended)"
+        echo "  2) Vite + React + TS  — lighter SPA (+ Tailwind/shadcn)"
+        echo "  3) Minimal  — landing + planning docs only"
+        read -p "Choose [1]: " _s; case "$_s" in 2) STACK=vite;; 3) STACK=minimal;; *) STACK=nextforge;; esac
+      else STACK=nextforge; fi
+    fi
+    warn "🧪 SaaS scaffolder (beta): sets up the full structure + planning docs. The agent then"
+    warn "   researches the market, defines the killer feature, and writes the code."
+
+    case "$STACK" in
+      nextforge)
+        have npx || { err "npx required (Node)"; exit 1; }
+        [ -e "$SAFE" ] && { err "'$SAFE' already exists"; exit 1; }
+        info "🏗  Scaffolding next-forge (Next.js + shadcn)…"
+        npx --yes next-forge@latest init "$SAFE" || { err "next-forge init failed (check Node version)"; exit 1; }
+        ;;
+      vite)
+        have npm || { err "npm required"; exit 1; }
+        [ -e "$SAFE" ] && { err "'$SAFE' already exists"; exit 1; }
+        info "🏗  Scaffolding Vite + React + TypeScript…"
+        npm create vite@latest "$SAFE" -- --template react-ts || { err "vite create failed"; exit 1; }
+        ;;
+      minimal)
+        [ -e "$SAFE" ] && { err "'$SAFE' already exists"; exit 1; }
+        mkdir -p "$SAFE"
+        ;;
+    esac
+    mkdir -p "$SAFE"
+    # agent guardrails + planning + legal
+    nt_docs "$SAFE"; nt_saas_docs "$SAFE"; nt_legal "$SAFE"
+    # business plan → PDF (best-effort, headless Chrome)
+    CHROME=$(nt_chrome)
+    if [ -n "$CHROME" ]; then
+      TMPH=$(mktemp -u).html
+      { echo "<!DOCTYPE html><html><head><meta charset=UTF-8><style>@page{margin:18mm}body{font:14px/1.6 -apple-system,system-ui,sans-serif;color:#14181f;max-width:760px;margin:auto}h1{font-size:30px}h2{font-size:18px;margin-top:22px;border-top:1px solid #e5e8ec;padding-top:14px}code{background:#f6f7f9;padding:1px 5px;border-radius:4px}</style></head><body>";
+        if have python3; then python3 - "$SAFE/BUSINESS_PLAN.md" <<'PY'
+import sys,html,re
+for ln in open(sys.argv[1]):
+    s=ln.rstrip("\n")
+    if s.startswith("## "): print("<h2>"+html.escape(s[3:])+"</h2>")
+    elif s.startswith("# "): print("<h1>"+html.escape(s[2:])+"</h1>")
+    elif s.startswith("> "): print("<p><em>"+html.escape(s[2:])+"</em></p>")
+    elif s.startswith("- "): print("<li>"+html.escape(s[2:])+"</li>")
+    elif s.strip()=="": print("<br>")
+    else: print("<p>"+html.escape(s)+"</p>")
+PY
+        else cat "$SAFE/BUSINESS_PLAN.md"; fi
+        echo "</body></html>"; } > "$TMPH"
+      "$CHROME" --headless=new --disable-gpu --no-pdf-header-footer --print-to-pdf="$SAFE/BUSINESS_PLAN.pdf" "file://$TMPH" >/dev/null 2>&1
+      rm -f "$TMPH"
+      [ -s "$SAFE/BUSINESS_PLAN.pdf" ] && echo -e "   ${GREEN}✓${NC} BUSINESS_PLAN.pdf generated"
+    else warn "   (install Chrome/Chromium to auto-export BUSINESS_PLAN.pdf)"; fi
+    echo ""; ok "SaaS '${BOLD}$SAFE${NC}' scaffolded ${DIM}($STACK)${NC}"
+    echo -e "   ${DIM}docs:${NC} BUSINESS_PLAN(.md/.pdf) · COMPETITORS.md · KILLER_FEATURE.md · LAUNCH.md · SETUP.md · DESIGN/AGENTS/CLAUDE · privacy/cookie/terms"
+    echo -e "   ${DIM}next:${NC} 1) research market  2) fill the plan  3) lock the killer feature  4) build  5) preview (nt-edit)  6) audit  7) ship"
+    [ "$SERVE" = yes ] && [ "$STACK" != minimal ] && ( cd "$SAFE" && have npm && { npm install && npm run dev; } )
+    exit 0
     ;;
 
   new)
@@ -1143,6 +1327,71 @@ HTML
     python3 "$E" "$DIR" "$PORT"
     ;;
 
+  # ───── QA / PRE-PRODUCTION TEST ─────
+  test|qa|preflight)
+    A="${1:-.}"; info "🧪 Pre-production check"
+    pass=0; warnc=0
+    P(){ echo -e "   ${GREEN}✓${NC} $1"; pass=$((pass+1)); }
+    W(){ echo -e "   ${YELLOW}▲${NC} $1"; warnc=$((warnc+1)); }
+    case "$A" in
+      http*)
+        have curl || { err "curl required"; exit 1; }
+        info "→ URL: $A"
+        H=$(curl -sSIL --max-time 20 "$A" 2>/dev/null)
+        echo -e "   ${DIM}$(printf '%s' "$H" | grep -i '^HTTP' | tail -1)${NC}"
+        [[ "$A" == https://* ]] && P "HTTPS" || W "not served over HTTPS"
+        for hd in "content-security-policy:Content-Security-Policy" "x-content-type-options:X-Content-Type-Options" "strict-transport-security:HSTS" "x-frame-options:X-Frame-Options" "referrer-policy:Referrer-Policy"; do
+          k="${hd%%:*}"; lbl="${hd##*:}"
+          printf '%s' "$H" | grep -qi "^$k:" && P "$lbl" || W "missing security header: $lbl"
+        done
+        t=$(curl -so /dev/null -w '%{time_total}' --max-time 20 "$A" 2>/dev/null); echo -e "   ${DIM}response time: ${t}s${NC}"
+        ;;
+      *)
+        DIR="$A"; [ -d "$DIR" ] || { err "Folder '$DIR' not found"; exit 1; }
+        info "→ folder: $DIR"
+        [ -f "$DIR/index.html" ] && P "index.html present" || W "no index.html"
+        [ -f "$DIR/_headers" ] && P "_headers (security/cache)" || W "no _headers (security headers)"
+        [ -f "$DIR/robots.txt" ] && P "robots.txt" || W "no robots.txt"
+        [ -f "$DIR/sitemap.xml" ] && P "sitemap.xml" || W "no sitemap.xml"
+        ls "$DIR"/404.html &>/dev/null && P "404 page" || W "no 404.html"
+        grep -rilq 'name="description"' "$DIR" --include='*.html' 2>/dev/null && P "meta description" || W "missing meta description"
+        noalt=$(grep -roE '<img [^>]*>' "$DIR" --include='*.html' 2>/dev/null | grep -vci 'alt=')
+        [ "${noalt:-0}" = 0 ] && P "all <img> have alt" || W "$noalt <img> without alt text"
+        mc=$(grep -rlE "(src|href)=[\"']http://" "$DIR" --include='*.html' --include='*.css' 2>/dev/null | grep -c .)
+        [ "${mc:-0}" = 0 ] && P "no http:// (mixed content) refs" || W "$mc file(s) with insecure http:// refs"
+        big=$(find "$DIR" -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \) -size +200k 2>/dev/null | grep -c .)
+        [ "${big:-0}" = 0 ] && P "no heavy raster images" || W "$big heavy image(s) — run nt-images"
+        find "$DIR" -name '.env*' ! -name '.env.example' -not -path '*/node_modules/*' 2>/dev/null | grep -q . && W ".env present — keep secrets out of the deploy folder" || P "no .env in folder"
+        ph=$(grep -rlE 'picsum\.photos|\[placeholder\]|hello@example\.com|Placeholder — replace|TEMPLATE — not legal' "$DIR" --include='*.html' 2>/dev/null | grep -c .)
+        [ "${ph:-0}" = 0 ] && P "no leftover placeholders" || W "$ph file(s) with placeholders/templates to finish"
+        ;;
+    esac
+    echo ""; echo -e "   ${BOLD}$pass passed${NC} · ${YELLOW}$warnc to review${NC}"
+    [ "$warnc" = 0 ] && ok "Looks production-ready." || warn "Review the ▲ items before going live."
+    ;;
+
+  # ───── MULTI-PROVIDER DEPLOY (Cloudflare stays the default via nt-push) ─────
+  vercel)
+    have npx || { err "npx required (Node)"; exit 1; }
+    DIR="${1:-.}"; PROD=""
+    for a in "$@"; do [ "$a" = "--prod" ] && PROD="--prod"; done
+    [ -d "$DIR" ] || { err "Folder '$DIR' not found"; exit 1; }
+    info "▲ Deploying to Vercel${PROD:+ (production)}… (first run asks you to log in)"
+    npx --yes vercel deploy "$DIR" $PROD
+    ;;
+  aws|s3)
+    have aws || { err "AWS CLI required — brew install awscli (then 'aws configure')"; exit 1; }
+    DIR="${1:-.}"; BUCKET="${2:-$AWS_BUCKET}"
+    [ -d "$DIR" ] || { err "Folder '$DIR' not found"; exit 1; }
+    [ -z "$BUCKET" ] && { err "Usage: nt-aws <dir> <s3-bucket>  (or set AWS_BUCKET)"; exit 1; }
+    info "☁  Syncing ${BOLD}$DIR${NC}${BLUE} → s3://$BUCKET …${NC}"
+    aws s3 sync "$DIR" "s3://$BUCKET" --delete || { err "s3 sync failed"; exit 1; }
+    if [ -n "$AWS_CF_DISTRIBUTION" ]; then
+      aws cloudfront create-invalidation --distribution-id "$AWS_CF_DISTRIBUTION" --paths '/*' >/dev/null 2>&1 && ok "CloudFront cache invalidated"
+    fi
+    ok "Synced to s3://$BUCKET${AWS_S3_URL:+ ($AWS_S3_URL)}"
+    ;;
+
   # ───── SETUP ─────
   init)
     check_wrangler; banner
@@ -1171,6 +1420,7 @@ ${BOLD}DEPLOY${NC}
   nt-push … --dry-run / -y   Simulate / skip production confirmation
   nt-ship [client]           ${MAGENTA}★${NC} build + deploy + QR + open, all in one
   nt-bp [client]             Shortcut for 'nt-push --build'
+  nt-vercel [dir] [--prod]   Deploy to Vercel  ·  nt-aws <dir> <bucket>  Deploy to AWS S3/CloudFront
 
 ${BOLD}TIME MACHINE${NC} ${MAGENTA}(kill feature)${NC}
   nt-rollback [client] [ts]  Restore a previous deploy (impossible with wrangler alone!)
@@ -1185,6 +1435,7 @@ ${BOLD}MANAGE${NC}
 
 ${BOLD}QUALITY & TRAFFIC${NC}
   nt-audit [url|client] [mobile|desktop]   PageSpeed pre-test with score (Google engine)
+  nt-test [dir|url]                        QA / pre-production check (headers, alts, mixed content, placeholders)
   nt-analytics inject <dir> <token>        Enable visit tracking (Web Analytics)
   nt-analytics open | nt-stats             Open dashboard / show visits
 
@@ -1192,6 +1443,7 @@ ${BOLD}TOOLKIT${NC} ${DIM}(works without Cloudflare too)${NC}
   nt-serve [dir] [port]      Local static server
   nt-edit [dir] [port]       Live dev server + in-browser text editor (auto-reload on save)
   nt-create [client]         Premium scaffold (DESIGN.md, AGENTS.md, _headers, manifest…) tuned for top PageSpeed
+  nt-create-saas [name]      Full SaaS scaffold (next-forge / Vite) + business plan PDF + killer feature
   nt-design list|add <brand> Fetch a brand DESIGN.md from the community library (Stripe, Linear, Notion…)
   nt-new [name]              Minimal starter site, ready to deploy
   nt-build                   Run the build and show its size

@@ -41,7 +41,7 @@ if [ -f "./scripts/nt-deploy.sh" ]; then
   cp ./scripts/nt-deploy.sh "$SCRIPT_PATH"
 else
   # fallback: download da GitHub se eseguito via curl
-  REPO_URL="${NT_REPO_URL:-https://raw.githubusercontent.com/nico33t/nt-deploy/main}"
+  REPO_URL="${NT_REPO_URL:-https://raw.githubusercontent.com/nico33t/toofast/main}"
   echo -e "${BLUE}📥 Scarico script da $REPO_URL${NC}"
   curl -fsSL "$REPO_URL/scripts/nt-deploy.sh" -o "$SCRIPT_PATH"
 fi
@@ -53,7 +53,7 @@ echo -e "${GREEN}✓${NC} Script installato in $SCRIPT_PATH"
 if [ -f "./scripts/nt-gui.py" ]; then
   cp ./scripts/nt-gui.py "$INSTALL_DIR/nt-gui.py"
 else
-  REPO_URL="${NT_REPO_URL:-https://raw.githubusercontent.com/nico33t/nt-deploy/main}"
+  REPO_URL="${NT_REPO_URL:-https://raw.githubusercontent.com/nico33t/toofast/main}"
   curl -fsSL "$REPO_URL/scripts/nt-gui.py" -o "$INSTALL_DIR/nt-gui.py" 2>/dev/null || true
 fi
 [ -f "$INSTALL_DIR/nt-gui.py" ] && echo -e "${GREEN}✓${NC} GUI installata in $INSTALL_DIR/nt-gui.py"
@@ -62,7 +62,7 @@ fi
 if [ -f "./scripts/nt-edit.py" ]; then
   cp ./scripts/nt-edit.py "$INSTALL_DIR/nt-edit.py"
 else
-  REPO_URL="${NT_REPO_URL:-https://raw.githubusercontent.com/nico33t/nt-deploy/main}"
+  REPO_URL="${NT_REPO_URL:-https://raw.githubusercontent.com/nico33t/toofast/main}"
   curl -fsSL "$REPO_URL/scripts/nt-edit.py" -o "$INSTALL_DIR/nt-edit.py" 2>/dev/null || true
 fi
 [ -f "$INSTALL_DIR/nt-edit.py" ] && echo -e "${GREEN}✓${NC} Editor live installato in $INSTALL_DIR/nt-edit.py"
@@ -74,7 +74,7 @@ if [ -d "$HOME/.claude" ]; then
   if [ -f "./integrations/claude-code/skill/SKILL.md" ]; then
     cp ./integrations/claude-code/skill/SKILL.md "$SKILL_DIR/SKILL.md"
   else
-    REPO_URL="${NT_REPO_URL:-https://raw.githubusercontent.com/nico33t/nt-deploy/main}"
+    REPO_URL="${NT_REPO_URL:-https://raw.githubusercontent.com/nico33t/toofast/main}"
     curl -fsSL "$REPO_URL/integrations/claude-code/skill/SKILL.md" -o "$SKILL_DIR/SKILL.md" 2>/dev/null || true
   fi
   [ -f "$SKILL_DIR/SKILL.md" ] && echo -e "${GREEN}✓${NC} Skill Claude Code registrata in $SKILL_DIR"
@@ -98,6 +98,8 @@ fi
 NT="~/.nt-tools/nt-deploy.sh"
 ALIAS_BLOCK="# >>> nt-deploy >>>
 alias nt='$NT'
+alias toofast='$NT'
+alias tf='$NT'
 # deploy
 alias nt-push='$NT push'
 alias nt-ship='$NT ship'
