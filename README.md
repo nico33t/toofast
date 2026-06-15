@@ -11,6 +11,8 @@ and a complete developer toolkit. All from your terminal. Zero dependencies beyo
 [![shell](https://img.shields.io/badge/bash-5%2B-1f8a55)](#)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
+**English** · [Italiano](README.it.md) · [Español](README.es.md) · [Deutsch](README.de.md)
+
 </div>
 
 ---
@@ -58,15 +60,34 @@ nt-rollback  client 17000000 # roll back to an exact snapshot
 ## Commands
 
 ```
-DEPLOY        nt-push · nt-ship · nt-bp
+DEPLOY     nt-push · nt-ship · nt-bp
 TIME MACHINE  nt-rollback · nt-snapshots
-MANAGE        nt-list · nt-clients · nt-projects · nt-rm · nt-rmproject · nt-logs · nt-open · nt-copy
-QUALITY       nt-audit · nt-analytics · nt-stats
-TOOLKIT       nt-serve · nt-new · nt-build · nt-size · nt-zip · nt-check · nt-qr · nt-clean · nt-doctor · nt-notes · nt-gui
-SETUP         nt-init · nt-config · nt-update · nt-version
+MANAGE     nt-list · nt-clients · nt-projects · nt-rm · nt-rmproject · nt-logs · nt-open · nt-copy
+QUALITY    nt-audit · nt-analytics · nt-stats
+SCAFFOLD   nt-create · nt-design · nt-new · nt-card (beta)
+TOOLKIT    nt-serve · nt-build · nt-size · nt-zip · nt-images · nt-check · nt-qr · nt-clean · nt-doctor · nt-notes · nt-gui
+SETUP      nt-init · nt-config · nt-update · nt-version
 ```
 
 Run `nt-help` for the full reference. You can also use a single entrypoint: `nt <command>`.
+
+## Scaffold a perfect site
+
+```bash
+nt-create acme            # asks: HTML/CSS/JS or Vite, and whether to start a live-reload dev server
+nt-design add stripe      # pull a brand DESIGN.md from the community library (MIT)
+nt-images .               # convert PNG/JPEG → WebP and rewrite the HTML references
+```
+
+`nt-create` ships a PageSpeed-tuned starter: semantic `index.html`, `DESIGN.md` (9-section
+agent spec), `AGENTS.md`, `CLAUDE.md`, `_headers` (CSP + caching), `robots.txt`, `sitemap.xml`,
+`site.webmanifest`, `favicon.svg`, `404.html`. AI agents read `DESIGN.md` and ask you to fill
+the empty sections before generating UI.
+
+## Claude Code plugin (+ MCP)
+
+Drive nt-deploy from Claude Code in natural language — deploy, roll back, audit and scaffold.
+See [`integrations/claude-code/`](integrations/claude-code/).
 
 ## Multiple projects
 

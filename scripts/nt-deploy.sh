@@ -28,8 +28,20 @@ set -- "${_args[@]}"
 
 # ── Project resolution ────────────────────────────────────────────────
 # Order:  -p/--project  >  env NT_PROJECT  >  ./.ntdeploy  >  ~/.nt-tools/config  >  default
-if [ -z "$NT_PROJECT" ] && [ -f "$PROJECT_FILE" ]; then source "$PROJECT_FILE"; NT_SOURCE="folder ($PROJECT_FILE)"; fi
-if [ -z "$NT_PROJECT" ] && [ -f "$CONFIG_FILE" ]; then source "$CONFIG_FILE"; NT_SOURCE="${NT_SOURCE:-global ($CONFIG_FILE)}"; fi
+# SECURITY: .ntdeploy lives inside arbitrary (possibly hostile) repos, so we
+# NEVER `source` it — we extract NT_PROJECT and strip it to safe characters
+# only. This prevents arbitrary code execution from a cloned repository.
+nt_read_project() {  # <file>
+  sed -n 's/^[[:space:]]*NT_PROJECT=//p' "$1" 2>/dev/null | head -1 \
+    | tr -d "\"' " | sed 's/[^A-Za-z0-9-].*//'
+}
+if [ -z "$NT_PROJECT" ] && [ -f "$PROJECT_FILE" ]; then
+  _np=$(nt_read_project "$PROJECT_FILE"); [ -n "$_np" ] && { NT_PROJECT="$_np"; NT_SOURCE="folder ($PROJECT_FILE)"; }
+fi
+# config lives in ~/.nt-tools (user-owned); still parsed, not sourced.
+if [ -z "$NT_PROJECT" ] && [ -f "$CONFIG_FILE" ]; then
+  _np=$(nt_read_project "$CONFIG_FILE"); [ -n "$_np" ] && { NT_PROJECT="$_np"; NT_SOURCE="global ($CONFIG_FILE)"; }
+fi
 PROJECT="${NT_PROJECT:-anteprima}"
 NT_SOURCE="${NT_SOURCE:-default}"
 
@@ -58,6 +70,7 @@ extract_version(){ grep -m1 '^VERSION=' "$1" 2>/dev/null | cut -d'"' -f2; }
 url_for(){ if [ "$1" = "main" ]; then echo "https://$PROJECT.pages.dev"; else echo "https://$1.$PROJECT.pages.dev"; fi; }
 deployments_json(){ wrangler pages deployment list --project-name="$PROJECT" --json 2>/dev/null; }
 human_size(){ if have numfmt; then numfmt --to=iec "$1" 2>/dev/null || echo "$1 B"; else echo "$1 B"; fi; }
+sedi(){ if sed --version >/dev/null 2>&1; then sed -i "$@"; else sed -i '' "$@"; fi; }   # portable in-place
 
 # ── Snapshots (kill feature: local rollback) ──────────────────────────
 snap_dir(){ echo "$SNAP_ROOT/$PROJECT/$1"; }
@@ -103,6 +116,149 @@ run_build(){
   [ -f package.json ] || { err "--build needs a package.json in the current folder"; exit 1; }
   local pm; pm=$(detect_pm); info "🔨 Building with ${BOLD}$pm${NC}${BLUE}…${NC}"
   if [ "$pm" = npm ]; then npm run build || { err "Build failed"; exit 1; }; else "$pm" run build || { err "Build failed"; exit 1; }; fi
+}
+
+# ── Scaffold helpers (shared by plain + Vite) ─────────────────────────
+# Use globals NAME, URL, PROJECT. $1 = target dir.
+nt_docs(){
+  cat > "$1/DESIGN.md" <<MD
+# Design System — $NAME
+
+> Single source of truth for UI, read by AI agents (Claude Code, Cursor, Copilot, Stitch)
+> as guardrails for every generation. Sections start EMPTY on purpose — see
+> "9. Agent Prompt Guide": the agent must fill them WITH the user, not invent values.
+
+## 1. Visual Theme & Atmosphere
+<!-- Overall visual tone and the brand's aesthetic intent -->
+-
+-
+
+## 2. Color Palette & Roles
+<!-- Semantic roles, not just hex values -->
+| Role | Token | Value |
+|---|---|---|
+| primary |  |  |
+| surface |  |  |
+| accent |  |  |
+| error |  |  |
+- Notes:
+
+## 3. Typography Rules
+- Font families:
+- Type scale:
+- Weights:
+- Line heights:
+
+## 4. Component Stylings
+- Buttons (variants + states):
+- Cards:
+- Forms / inputs:
+- Navigation:
+
+## 5. Layout Principles
+- Grid:
+- Breakpoints:
+- Base spacing:
+
+## 6. Depth & Elevation
+- Shadows:
+- Z-index layers:
+- Layering rules:
+
+## 7. Do's and Don'ts
+- ✅ Do:
+- ❌ Don't:
+
+## 8. Responsive Behavior
+- Desktop:
+- Tablet:
+- Mobile:
+
+## 9. Agent Prompt Guide
+Instructions for AI agents reading this file:
+- This file is the source of truth for UI. Use ONLY values defined above.
+- If a section is empty, DO NOT invent values. First ask the user the questions
+  below, then write the answers back into the sections above, then build.
+- Questions to ask before building:
+  1. What feeling should the site evoke? (minimal, bold, playful, luxury, editorial…)
+  2. Brand colors — existing palette or logo to match?
+  3. Typography vibe (serif/sans, classic/modern) or specific fonts?
+  4. Reference sites you like?
+  5. Light, dark, or both?
+  6. Primary audience and main devices?
+- Never introduce colors, fonts, or spacing outside the documented scale.
+- Validate every component against section 7 and accessibility (contrast ≥ 4.5:1, visible focus).
+MD
+  cat > "$1/AGENTS.md" <<MD
+# AGENTS.md — $NAME
+
+Guidance for AI coding agents working in this repository.
+
+## Design source of truth
+- \`DESIGN.md\` is the single source of truth for all UI. Read it before generating any component.
+- Use only the colors, fonts, spacing, and component patterns defined there.
+- If \`DESIGN.md\` has empty sections, ask the user the questions in its "Agent Prompt Guide"
+  and fill them in first — do not invent values.
+
+## Quality bar
+- Target PageSpeed ≥ 95 (mobile): no render-blocking web fonts, defer JS, set width/height on media.
+- Accessible: semantic landmarks, visible focus, contrast ≥ 4.5:1, "skip to content".
+- Keep payload lean; convert images to WebP (\`nt-images\`).
+
+## Project
+- Static site deployed to Cloudflare Pages with nt-deploy: \`nt-push . <client>\`.
+- Security & cache headers live in \`_headers\`. PWA config in \`site.webmanifest\`.
+
+## Don't
+- Don't add heavy frameworks or trackers without asking.
+- Don't introduce values outside the \`DESIGN.md\` scale.
+MD
+  cat > "$1/CLAUDE.md" <<MD
+# CLAUDE.md — $NAME
+
+## Design System
+Always refer to DESIGN.md when generating UI components.
+- Use only colors, fonts, and spacing defined in DESIGN.md
+- Match component states to the patterns described there
+- Never introduce values outside the documented scale
+- Validate accessibility against the Do's and Don'ts section
+- If a DESIGN.md section is empty, ask the user the questions in its "Agent Prompt Guide" before generating
+
+## Build & deploy
+- Preview: \`nt-serve .\`  ·  Audit: \`nt-audit <client>\`  ·  Ship: \`nt-push . <client>\`
+- Keep PageSpeed ≥ 95 and respect \`_headers\` (CSP, caching).
+MD
+  echo "NT_PROJECT=$PROJECT" > "$1/.ntdeploy"
+}
+# common static meta (robots, sitemap, manifest, favicon, 404). $1 = web dir.
+nt_meta(){
+  printf 'User-agent: *\nAllow: /\nSitemap: %s/sitemap.xml\n' "$URL" > "$1/robots.txt"
+  printf '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>%s/</loc></url>\n</urlset>\n' "$URL" > "$1/sitemap.xml"
+  cat > "$1/site.webmanifest" <<MAN
+{ "name": "$NAME", "short_name": "$NAME", "start_url": "/", "display": "standalone",
+  "background_color": "#0b1020", "theme_color": "#0b1020",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }] }
+MAN
+  cat > "$1/favicon.svg" <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#0b1020"/><circle cx="50" cy="50" r="28" fill="none" stroke="#35e8ff" stroke-width="8"/><circle cx="50" cy="50" r="9" fill="#6d4aff"/></svg>
+SVG
+  cat > "$1/404.html" <<H4
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Not found — $NAME</title><link rel="stylesheet" href="/styles.css"></head>
+<body><main><section class="hero"><h1>404</h1><p>This page doesn't exist.</p><a class="cta" href="/">Back home</a></section></main></body></html>
+H4
+}
+# optional dev server with live reload. $1=dir $2=stack $3=serve(yes|no)
+nt_devserve(){
+  [ "$3" = yes ] || return 0
+  if [ "$2" = vite ]; then
+    have npm || { warn "npm not found — start later with: cd $1 && npm install && npm run dev"; return 0; }
+    info "📦 Installing deps + starting Vite (HMR — edit and see changes live)…"
+    ( cd "$1" && npm install && npm run dev )
+  else
+    if have npx; then info "🔁 Starting live-server (auto-reload on save)…"; ( cd "$1" && npx --yes live-server )
+    elif have python3; then warn "live-server unavailable; serving without auto-reload (refresh manually)."; ( cd "$1" && python3 -m http.server 8080 )
+    else err "Need npx or python3 to run a dev server."; fi
+  fi
 }
 
 # ══════════════════════════════════════════════════════════════════════
@@ -321,6 +477,209 @@ case $ACTION in
     else err "Need python3 or npx"; exit 1; fi
     ;;
 
+  design)   # fetch a brand DESIGN.md from the community library (MIT, on-demand)
+    SUB="${1:-list}"; shift 2>/dev/null
+    BASE="https://raw.githubusercontent.com/VoltAgent/awesome-design-md/main/design-md"
+    APIU="https://api.github.com/repos/VoltAgent/awesome-design-md/contents/design-md"
+    have curl || { err "curl required"; exit 1; }
+    case "$SUB" in
+      list)
+        info "🎨 Design templates ${DIM}(VoltAgent/awesome-design-md · MIT)${NC}:"
+        if have jq; then
+          curl -fsSL "$APIU" 2>/dev/null | jq -r '.[]|select(.type=="dir")|.name' \
+            | (command -v column >/dev/null && column -c 76 || cat) | sed 's/^/   /'
+        else curl -fsSL "$APIU" 2>/dev/null | grep -o '"name": "[^"]*"' | cut -d'"' -f4 | sed 's/^/   /'; fi
+        echo -e "   ${DIM}Add one:${NC} nt-design add <brand>   ${DIM}(e.g. nt-design add bugatti)${NC}"
+        ;;
+      add)
+        NAME=$(echo "${1:-}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]//g')
+        [ -z "$NAME" ] && { err "Usage: nt-design add <brand> [destfile]"; exit 1; }
+        DEST="${2:-DESIGN.md}"; TMP=$(mktemp)
+        if curl -fsSL "$BASE/$NAME/DESIGN.md" -o "$TMP" 2>/dev/null && [ -s "$TMP" ]; then
+          [ -f "$DEST" ] && { cp "$DEST" "$DEST.bak"; warn "Backed up existing → $DEST.bak"; }
+          { echo "<!-- Design template '$NAME' — source: github.com/VoltAgent/awesome-design-md (MIT), design-md/$NAME — fetched $(date +%F) -->"; echo; cat "$TMP"; } > "$DEST"
+          rm -f "$TMP"; ok "Added '${BOLD}$NAME${NC}' template → ${BOLD}$DEST${NC}"
+          echo -e "   ${DIM}AI agents will now follow this brand's design rules. Tweak as needed.${NC}"
+        else rm -f "$TMP"; err "Template '$NAME' not found. Browse: nt-design list"; fi
+        ;;
+      *) echo "Usage: nt-design list | add <brand> [destfile]" ;;
+    esac
+    ;;
+
+  create|scaffold)
+    NAME="${1:-site}"; SAFE=$(sanitize_branch "$NAME"); URL=$(url_for "$SAFE")
+    [ -e "$SAFE" ] && { err "'$SAFE' already exists"; exit 1; }
+    STACK=""; SERVE=""
+    for a in "${@:2}"; do case "$a" in
+      --vite) STACK=vite;; --plain|--static) STACK=plain;; --serve) SERVE=yes;; --no-serve) SERVE=no;;
+    esac; done
+    if [ -z "$STACK" ]; then
+      if [ -t 0 ]; then
+        echo -e "${BOLD}Stack for '$SAFE':${NC}"
+        echo "  1) HTML / CSS / JS  — no build, instant"
+        echo "  2) Vite             — HMR + bundling"
+        read -p "Choose [1]: " _s; [ "$_s" = 2 ] && STACK=vite || STACK=plain
+      else STACK=plain; fi
+    fi
+    if [ -z "$SERVE" ]; then
+      if [ -t 0 ]; then read -p "Start a dev server with live reload now? [y/N] " _d; [[ "$_d" =~ ^[sSyY]$ ]] && SERVE=yes || SERVE=no; else SERVE=no; fi
+    fi
+    if [ "$STACK" = vite ]; then
+      mkdir -p "$SAFE/src" "$SAFE/public"
+      nt_docs "$SAFE"; nt_meta "$SAFE/public"
+      cat > "$SAFE/public/_headers" <<'HDR'
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'self'; form-action 'self'
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+HDR
+      cat > "$SAFE/package.json" <<JSON
+{
+  "name": "$SAFE",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview" },
+  "devDependencies": { "vite": "^5.4.0" }
+}
+JSON
+      cat > "$SAFE/index.html" <<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>$NAME</title>
+  <meta name="description" content="$NAME — built with nt-deploy + Vite.">
+  <meta name="theme-color" content="#0b1020">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/site.webmanifest">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header"><strong>$NAME</strong></header>
+  <main id="main">
+    <section class="hero">
+      <h1>$NAME</h1>
+      <p>Vite + HMR — edit src/ and see changes live, no refresh.</p>
+      <a class="cta" href="#">Get started</a>
+    </section>
+  </main>
+  <footer class="site-footer"><small>© <span id="y"></span> $NAME</small></footer>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
+HTML
+      cat > "$SAFE/src/main.js" <<'JS'
+import './style.css';
+document.getElementById('y').textContent = new Date().getFullYear();
+JS
+      cat > "$SAFE/src/style.css" <<'CSS'
+*,*::before,*::after{box-sizing:border-box;margin:0}
+:root{--bg:#0b1020;--fg:#e6f0ff;--muted:#9fb0d0;--accent:#6d4aff;--accent2:#35e8ff;--max:1080px}
+@media (prefers-color-scheme:light){:root{--bg:#fff;--fg:#0b1020;--muted:#5a6b88}}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;min-height:100dvh;display:flex;flex-direction:column}
+img{max-width:100%;height:auto;display:block}
+.skip{position:absolute;left:-999px}.skip:focus{left:12px;top:12px;background:#fff;color:#000;padding:8px;border-radius:8px}
+.site-header{padding:18px clamp(16px,5vw,40px)}
+main{flex:1;width:100%;max-width:var(--max);margin:0 auto;padding:clamp(40px,9vw,110px) clamp(16px,5vw,40px)}
+.hero h1{font-size:clamp(2.4rem,8vw,4.4rem);line-height:1.05;letter-spacing:-.02em;background:linear-gradient(120deg,var(--accent2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin:18px 0 28px;color:var(--muted);font-size:clamp(1rem,2.6vw,1.3rem);max-width:60ch}
+.cta{display:inline-block;padding:14px 26px;border-radius:12px;text-decoration:none;font-weight:700;background:linear-gradient(120deg,var(--accent2),var(--accent));color:#04060f}
+.site-footer{padding:24px clamp(16px,5vw,40px);color:var(--muted)}
+CSS
+      printf 'node_modules\ndist\n.DS_Store\n' > "$SAFE/.gitignore"
+      ok "Created premium starter ${BOLD}$SAFE/${NC} ${DIM}(Vite + HMR)${NC}"
+      echo -e "   ${DIM}files:${NC} index.html · src/main.js · src/style.css · package.json · DESIGN.md · AGENTS.md · CLAUDE.md · public/(_headers, robots, sitemap, manifest, favicon, 404)"
+      echo -e "   ${DIM}dev:${NC} cd $SAFE && npm install && npm run dev   ${DIM}·  build+ship:${NC} nt-bp $SAFE"
+      nt_devserve "$SAFE" vite "$SERVE"
+      exit 0
+    fi
+    mkdir -p "$SAFE/assets"
+    # — index.html : semantic, accessible, zero render-blocking fonts, deferred JS —
+    cat > "$SAFE/index.html" <<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>$NAME</title>
+  <meta name="description" content="$NAME — built with nt-deploy. Fast, accessible, production-ready.">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="color-scheme" content="light dark">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="$NAME">
+  <meta property="og:description" content="$NAME — fast, accessible, production-ready.">
+  <meta property="og:url" content="$URL">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="$URL">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header"><strong>$NAME</strong></header>
+  <main id="main">
+    <section class="hero">
+      <h1>$NAME</h1>
+      <p>A fast, accessible starting point — scoring high on PageSpeed out of the box.</p>
+      <a class="cta" href="#">Get started</a>
+    </section>
+  </main>
+  <footer class="site-footer"><small>© <span id="y"></span> $NAME</small></footer>
+  <script src="/app.js" defer></script>
+</body>
+</html>
+HTML
+    # — styles.css : system fonts (no web-font blocking), modern reset, dark-mode aware —
+    cat > "$SAFE/styles.css" <<'CSS'
+*,*::before,*::after{box-sizing:border-box;margin:0}
+:root{--bg:#0b1020;--fg:#e6f0ff;--muted:#9fb0d0;--accent:#6d4aff;--accent2:#35e8ff;--max:1080px}
+@media (prefers-color-scheme:light){:root{--bg:#ffffff;--fg:#0b1020;--muted:#5a6b88}}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--fg);
+ line-height:1.6;min-height:100dvh;display:flex;flex-direction:column}
+img{max-width:100%;height:auto;display:block}
+.skip{position:absolute;left:-999px}.skip:focus{left:12px;top:12px;background:#fff;color:#000;padding:8px;border-radius:8px;z-index:10}
+.site-header{padding:18px clamp(16px,5vw,40px)}
+main{flex:1;width:100%;max-width:var(--max);margin:0 auto;padding:clamp(40px,9vw,110px) clamp(16px,5vw,40px)}
+.hero h1{font-size:clamp(2.4rem,8vw,4.4rem);line-height:1.05;letter-spacing:-.02em;
+ background:linear-gradient(120deg,var(--accent2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin:18px 0 28px;color:var(--muted);font-size:clamp(1rem,2.6vw,1.3rem);max-width:60ch}
+.cta{display:inline-block;padding:14px 26px;border-radius:12px;text-decoration:none;font-weight:700;
+ background:linear-gradient(120deg,var(--accent2),var(--accent));color:#04060f}
+.cta:focus-visible{outline:3px solid var(--accent2);outline-offset:3px}
+.site-footer{padding:24px clamp(16px,5vw,40px);color:var(--muted)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+CSS
+    echo 'document.getElementById("y").textContent=new Date().getFullYear();' > "$SAFE/app.js"
+    nt_docs "$SAFE"
+    # — Cloudflare _headers : security + long-cache (plain stack) —
+    cat > "$SAFE/_headers" <<'HDR'
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'self'; form-action 'self'
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+/styles.css
+  Cache-Control: public, max-age=31536000, immutable
+/app.js
+  Cache-Control: public, max-age=31536000, immutable
+HDR
+    nt_meta "$SAFE"
+    ok "Created premium starter ${BOLD}$SAFE/${NC} ${DIM}(plain HTML/CSS/JS)${NC}"
+    echo -e "   ${DIM}files:${NC} index.html · styles.css · app.js · DESIGN.md · AGENTS.md · CLAUDE.md · _headers · robots.txt · sitemap.xml · site.webmanifest · favicon.svg · 404.html"
+    echo -e "   ${DIM}preview:${NC} nt-serve $SAFE   ${DIM}·  ship:${NC} nt-push $SAFE $SAFE   ${DIM}·  audit:${NC} nt-audit $SAFE"
+    nt_devserve "$SAFE" plain "$SERVE"
+    ;;
+
   new)
     NAME="${1:-site}"; SAFE=$(sanitize_branch "$NAME")
     [ -e "$SAFE" ] && { err "'$SAFE' already exists"; exit 1; }
@@ -346,6 +705,36 @@ CSS
     ;;
 
   build)   run_build; OUT=$(detect_outdir); [ -n "$OUT" ] && { ok "Build ready in ${BOLD}$OUT${NC}"; exec "$0" size "$OUT"; } ;;
+
+  images|webp)   # convert png/jpg/jpeg/gif → WebP and rewrite <img>/url() references
+    DIR="${1:-.}"; Q="${2:-82}"; [ -d "$DIR" ] || { err "Folder '$DIR' not found"; exit 1; }
+    CONV=""; for t in cwebp magick convert; do have "$t" && { CONV="$t"; break; }; done
+    [ -z "$CONV" ] && have sips && CONV=sips
+    [ -z "$CONV" ] && { err "Need cwebp, imagemagick or sips. Install: brew install webp"; exit 1; }
+    info "🖼  Converting images in ${BOLD}$DIR${NC}${BLUE} to WebP (q$Q, via $CONV)…${NC}"
+    N=0; SAVED=0
+    while IFS= read -r f; do
+      out="${f%.*}.webp"
+      case "$CONV" in
+        cwebp)  cwebp -quiet -q "$Q" "$f" -o "$out" 2>/dev/null ;;
+        magick) magick "$f" -quality "$Q" "$out" 2>/dev/null ;;
+        convert) convert "$f" -quality "$Q" "$out" 2>/dev/null ;;
+        sips)   sips -s format webp "$f" --out "$out" >/dev/null 2>&1 ;;
+      esac
+      if [ -s "$out" ]; then
+        old=$(wc -c < "$f"); new=$(wc -c < "$out"); SAVED=$((SAVED + old - new))
+        base=$(basename "$f"); wbase=$(basename "$out")
+        # rewrite references (src=, href=, url()) across html/css/js
+        grep -rlF "$base" "$DIR" --include='*.html' --include='*.css' --include='*.js' 2>/dev/null \
+          | while IFS= read -r ref; do sedi "s|$base|$wbase|g" "$ref"; done
+        echo -e "   ${GREEN}✓${NC} $base → $wbase  ${DIM}($(human_size "$old") → $(human_size "$new"))${NC}"
+        N=$((N+1))
+      else echo -e "   ${RED}✗${NC} $(basename "$f")"; fi
+    done < <(find "$DIR" -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' \) ! -iname '*.webp')
+    [ "$N" = 0 ] && { warn "No PNG/JPEG/GIF images found in $DIR."; exit 0; }
+    ok "$N image(s) → WebP, references rewritten. Saved ~$(human_size "$SAVED"). Originals kept."
+    echo -e "   ${DIM}Delete originals when happy:  find $DIR \\( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \\) -delete${NC}"
+    ;;
 
   size)
     DIR="${1:-$(detect_outdir)}"; DIR="${DIR:-./dist}"; [ -d "$DIR" ] || { err "Folder '$DIR' not found"; exit 1; }
@@ -383,6 +772,13 @@ CSS
     chk node; chk npm; chk wrangler; chk git; chk jq; chk curl; chk qrencode; chk python3
     echo ""; echo -e "   Project: ${BOLD}$PROJECT${NC} ${DIM}[$NT_SOURCE]${NC}"
     if have wrangler; then who=$(wrangler whoami 2>/dev/null | grep -i -m1 'email\|account' | sed 's/^/   /'); [ -n "$who" ] && echo -e "${DIM}$who${NC}" || echo -e "   ${YELLOW}Cloudflare: not logged in (nt-init)${NC}"; fi
+    # auto-detect heavy images and recommend conversion
+    BIG=$(find . -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \) -size +200k 2>/dev/null | head -6)
+    if [ -n "$BIG" ]; then
+      echo ""; warn "🖼  Heavy images found (>200KB) — convert to WebP for a higher PageSpeed score:"
+      echo "$BIG" | while read -r f; do [ -n "$f" ] && echo -e "   ${DIM}$(human_size "$(wc -c < "$f")")  ${f#./}${NC}"; done
+      echo -e "   Fix (keeps quality, rewrites HTML refs):  ${BLUE}nt-images .${NC}"
+    fi
     ;;
 
   clean)
@@ -399,6 +795,52 @@ CSS
     CLIENT="${1:-main}"; info "📦 SHIP → build + deploy + QR + open"
     [ -f package.json ] && "$0" push --build "$CLIENT" -y || "$0" push . "$CLIENT" -y
     "$0" qr "$CLIENT"; "$0" open "$CLIENT"
+    ;;
+
+  # ───── BETA: shareable client card (HTML + PDF) ─────
+  card|share)
+    warn "🧪 BETA feature — experimental, may change or be removed. Feedback welcome."
+    A="${1:-main}"; case "$A" in http*) URL="$A"; NAME="site";; *) NAME="$(sanitize_branch "$A")"; URL=$(url_for "$NAME");; esac
+    TITLE="${2:-$NAME}"; OUT="${NT_CARD_OUT:-nt-card-$NAME}"; HTML="$OUT.html"; PDF="$OUT.pdf"; SHOT="$(mktemp -u).png"
+    CHROME=""
+    for c in "$NT_CHROME" "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" "/Applications/Chromium.app/Contents/MacOS/Chromium" "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser" "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"; do
+      [ -n "$c" ] && [ -x "$c" ] && { CHROME="$c"; break; }; done
+    [ -z "$CHROME" ] && for c in google-chrome chromium chromium-browser brave-browser; do have "$c" && { CHROME="$(command -v "$c")"; break; }; done
+    IMG_TAG="<div class=\"ph\">$TITLE</div>"
+    if [ -n "$CHROME" ]; then
+      info "📸 Capturing $URL…"
+      "$CHROME" --headless=new --disable-gpu --hide-scrollbars --window-size=1280,820 --screenshot="$SHOT" "$URL" >/dev/null 2>&1
+      if [ -s "$SHOT" ] && have base64; then IMG_TAG="<img class=\"shot\" alt=\"preview\" src=\"data:image/png;base64,$(base64 < "$SHOT" | tr -d '\n')\">"; fi
+      rm -f "$SHOT"
+    fi
+    QR=""; have qrencode && QR=$(qrencode -o - -t SVG -m 1 "$URL" 2>/dev/null)
+    cat > "$HTML" <<HTML
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>$TITLE — preview</title>
+<style>@page{size:A4;margin:0}*{margin:0;box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,system-ui,sans-serif}
+body{color:#0b1020}.card{width:794px;min-height:1123px;margin:0 auto;background:#fff;display:flex;flex-direction:column}
+.hero{padding:54px 56px;background:linear-gradient(135deg,#0b1020,#1a1740);color:#fff}
+.hero .tag{font-size:13px;letter-spacing:.22em;color:#7fdcff;text-transform:uppercase}
+.hero h1{font-size:46px;margin:10px 0 6px;line-height:1.05}.hero a{color:#c7b9ff;font-size:16px;text-decoration:none}
+.shotwrap{padding:36px 56px;flex:1}.shot{width:100%;border:1px solid #e4e4e7;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.14)}
+.ph{height:360px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(135deg,#35e8ff,#8b6cff);color:#04060f;font-size:40px;font-weight:800}
+.foot{display:flex;align-items:center;justify-content:space-between;padding:30px 56px;border-top:1px solid #e4e4e7}
+.foot .qr{width:120px;height:120px}.foot .info b{display:block;font-size:18px}.foot .info span{color:#71717a;font-size:14px}
+.brand{font-size:12px;color:#a1a1aa;text-align:right}</style></head>
+<body><div class="card">
+<div class="hero"><div class="tag">Live preview</div><h1>$TITLE</h1><a href="$URL">$URL</a></div>
+<div class="shotwrap">$IMG_TAG</div>
+<div class="foot"><div class="qr">$QR</div>
+<div class="info"><b>Scan to open</b><span>$URL</span></div>
+<div class="brand">prepared with<br><b>nt-deploy</b></div></div>
+</div></body></html>
+HTML
+    ok "Created ${BOLD}$HTML${NC}"
+    if [ -n "$CHROME" ]; then
+      ABS="file://$(cd "$(dirname "$HTML")"&&pwd)/$(basename "$HTML")"
+      "$CHROME" --headless=new --disable-gpu --no-pdf-header-footer --print-to-pdf="$PDF" "$ABS" >/dev/null 2>&1
+      [ -s "$PDF" ] && ok "Created ${BOLD}$PDF${NC} — a single file to send your client ($(human_size "$(wc -c < "$PDF")"))"
+    else warn "Install Chrome/Chromium to export a PDF too. For now: open $HTML and print to PDF."; fi
+    have open && open "$HTML" 2>/dev/null
     ;;
 
   # ───── GUI ─────
@@ -468,15 +910,19 @@ ${BOLD}QUALITY & TRAFFIC${NC}
 
 ${BOLD}TOOLKIT${NC} ${DIM}(works without Cloudflare too)${NC}
   nt-serve [dir] [port]      Local static server
-  nt-new [name]              Scaffold a starter site, ready to deploy
+  nt-create [client]         Premium scaffold (DESIGN.md, AGENTS.md, _headers, manifest…) tuned for top PageSpeed
+  nt-design list|add <brand> Fetch a brand DESIGN.md from the community library (Stripe, Linear, Notion…)
+  nt-new [name]              Minimal starter site, ready to deploy
   nt-build                   Run the build and show its size
   nt-size [dir]              Output weight report + top files
   nt-zip [dir] [out.zip]     Package a folder
+  nt-images [dir] [quality]  Convert PNG/JPEG/GIF → WebP and rewrite references in HTML/CSS/JS
   nt-check [url|client]      Health-check: HTTP status, time, size
   nt-qr [url|client]         QR code in the terminal
   nt-clean                   Remove dist/build/cache
   nt-doctor                  Environment diagnostics
   nt-notes <client> ["…"]    Per-client notes (view/add)
+  nt-card [url|client]       ${MAGENTA}🧪 beta${NC} — a shareable one-pager (HTML + PDF) to send a client
   nt-gui [port]              Lightweight browser GUI
 
 ${BOLD}SETUP${NC}

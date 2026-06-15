@@ -1,0 +1,15 @@
+{
+  "name": "nt-deploy",
+  "version": "2.0.0",
+  "description": "Deploy to Cloudflare Pages, instant rollback, PageSpeed audits and a dev toolkit — straight from Claude Code.",
+  "author": { "name": "nico33t", "url": "https://github.com/nico33t/nt-deploy" },
+  "homepage": "https://github.com/nico33t/nt-deploy",
+  "license": "MIT",
+  "keywords": ["cloudflare", "pages", "deploy", "rollback", "pagespeed", "lighthouse"],
+  "mcpServers": {
+    "nt-deploy": {
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/nt_mcp.py"]
+    }
+  }
+}
