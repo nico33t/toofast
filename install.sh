@@ -133,6 +133,7 @@ alias nt-check='$NT check'
 alias nt-qr='$NT qr'
 alias nt-clean='$NT clean'
 alias nt-doctor='$NT doctor'
+alias nt-assets='$NT assets'
 alias nt-notes='$NT notes'
 alias nt-gui='$NT gui'
 # setup

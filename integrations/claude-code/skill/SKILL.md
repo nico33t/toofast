@@ -37,6 +37,8 @@ DESIGN.md from a brand template, e.g. `--design=stripe`).
 1. **Understand the client.** Ask: what does the business do / industry? Audience and goal
    (leads, sales, bookings, info)? **Do they already have a website?** (get the URL). Brand
    assets (logo, colors, fonts, tone)? Which pages and languages? Reference sites they like?
+   Also run `nt-assets .` to discover logos, images, fonts and colors already in the project and
+   **reuse what exists** — never invent assets when real ones are available.
 2. **If they already have a site**, inspect it: `nt-check <url>` and `nt-audit <url>` to learn
    its structure/quality and what to improve.
 3. **Design.** Fill `DESIGN.md` from their brand, or seed from a template (`nt-design add <brand>`),
@@ -46,8 +48,10 @@ DESIGN.md from a brand template, e.g. `--design=stripe`).
    `--design=<brand>` to seed the DESIGN.md).
 5. **Build** strictly against `DESIGN.md`: accessible, standards-based, PageSpeed-first. Keep the
    output portable (plain HTML/CSS/JS or Vite) so it works with any tool.
-6. **Images.** Check the project for raster images (PNG/JPEG). If any, run `nt-images <dir>` to
-   convert them to WebP (keeps quality, rewrites references). `nt-doctor` also flags heavy images.
+6. **Images.** A real site needs at least some imagery — use the client's assets (from `nt-assets`)
+   or the scaffold's SVGs. **Judge whether raster images need optimizing: if PNG/JPEG are present,
+   run `nt-images <dir>` automatically** to convert to WebP (keeps quality, rewrites references).
+   `nt-doctor` also flags heavy images. Always set `width`/`height` on `<img>`.
 7. **Preview & iterate** with `nt-edit <dir>`: live reload (CSS hot-swaps with no full refresh),
    in-browser editor, and click-to-source (🎯) to jump from any element to its line.
 8. **Audit.** `nt-audit <dir|client>` — aim for ≥ 95 on mobile; fix issues.

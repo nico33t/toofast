@@ -252,7 +252,97 @@ SVG
 <body><main><section class="hero"><h1>404</h1><p>This page doesn't exist.</p><a class="cta" href="/">Back home</a></section></main></body></html>
 H4
 }
-# optional dev server with live reload. $1=dir $2=stack $3=serve(yes|no)
+# Legal docs (GDPR-aware TEMPLATES, not legal advice). $1 = web dir.
+nt_legal(){
+  local D="$(date +%Y-%m-%d)"
+  cat > "$1/privacy.html" <<MD
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Privacy Policy — $NAME</title><link rel="stylesheet" href="/styles.css"></head>
+<body><main class="legal">
+<p><a href="/">← $NAME</a></p>
+<h1>Privacy Policy</h1>
+<p class="legal__date">Last updated: $D</p>
+<div class="legal__note"><strong>Template — not legal advice.</strong> Review with a qualified
+professional and complete every [placeholder] before publishing.</div>
+
+<h2>1. Data controller</h2>
+<p>[Company name], [address] — contact: [email]. VAT/Reg: [number].</p>
+
+<h2>2. Data we process</h2>
+<ul>
+<li><strong>Contact data</strong> you submit (e.g. name, email, message) — only if you contact us.</li>
+<li><strong>Technical logs</strong> (IP address, user agent, timestamps) processed by our hosting
+provider for security and operation.</li>
+<li>No advertising or tracking cookies are set by default.</li>
+</ul>
+
+<h2>3. Purposes &amp; legal basis (GDPR Art. 6)</h2>
+<ul>
+<li>Replying to your request — consent / pre-contractual steps.</li>
+<li>Operating and securing the site — legitimate interest.</li>
+<li>Legal obligations — where applicable.</li>
+</ul>
+
+<h2>4. Recipients</h2>
+<p>Hosting/CDN provider [e.g. Cloudflare, Inc.] as data processor. We do not sell your data.
+International transfers, if any, rely on adequacy decisions or Standard Contractual Clauses.</p>
+
+<h2>5. Retention</h2>
+<p>Contact data: [period, e.g. 24 months]. Logs: [period]. Then deleted or anonymized.</p>
+
+<h2>6. Your rights</h2>
+<p>Access, rectification, erasure, restriction, portability, objection, and withdrawal of consent.
+To exercise them: [email]. You may lodge a complaint with your supervisory authority
+([e.g. Garante per la protezione dei dati personali, Italy]).</p>
+
+<h2>7. Contact</h2>
+<p>[email] — [Company name].</p>
+</main></body></html>
+MD
+  cat > "$1/cookie-policy.html" <<MD
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Cookie Policy — $NAME</title><link rel="stylesheet" href="/styles.css"></head>
+<body><main class="legal">
+<p><a href="/">← $NAME</a></p>
+<h1>Cookie Policy</h1>
+<p class="legal__date">Last updated: $D</p>
+<div class="legal__note"><strong>Template — not legal advice.</strong> Update this if you add
+analytics or third-party embeds, and complete the [placeholders].</div>
+<h2>Cookies we use</h2>
+<p>By default this site sets <strong>no tracking or advertising cookies</strong>. Only strictly
+necessary cookies may be used to deliver the site securely (technical, no consent required).</p>
+<h2>If you enable analytics</h2>
+<p>If you add a measurement tool (e.g. privacy-friendly analytics), list it here with provider,
+purpose, duration, and obtain prior consent via a banner where required.</p>
+<h2>Managing cookies</h2>
+<p>You can block or delete cookies in your browser settings. See also our
+<a href="/privacy.html">Privacy Policy</a>.</p>
+</main></body></html>
+MD
+  cat > "$1/terms.html" <<MD
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Terms of Use — $NAME</title><link rel="stylesheet" href="/styles.css"></head>
+<body><main class="legal">
+<p><a href="/">← $NAME</a></p>
+<h1>Terms of Use</h1>
+<p class="legal__date">Last updated: $D</p>
+<div class="legal__note"><strong>Template — not legal advice.</strong> Review with a professional
+and complete the [placeholders] before publishing.</div>
+<h2>1. Acceptance</h2><p>By using $NAME you agree to these terms.</p>
+<h2>2. Intellectual property</h2><p>All content is owned by [Company name] unless stated otherwise.</p>
+<h2>3. Acceptable use</h2><p>Do not misuse, disrupt, or attempt to gain unauthorized access to the site.</p>
+<h2>4. Disclaimer &amp; liability</h2><p>The site is provided "as is"; to the extent permitted by law
+[Company name] is not liable for indirect or incidental damages.</p>
+<h2>5. Governing law</h2><p>These terms are governed by the laws of [country/region]. Venue: [city].</p>
+<h2>6. Contact</h2><p>[email] — [Company name].</p>
+</main></body></html>
+MD
+}
+
+# optional dev server with live reload. \$1=dir \$2=stack \$3=serve(yes|no)
 nt_devserve(){
   [ "$3" = yes ] || return 0
   if [ "$2" = vite ]; then
@@ -541,7 +631,7 @@ case $ACTION in
     fi
     if [ "$STACK" = vite ]; then
       mkdir -p "$SAFE/src" "$SAFE/public"
-      nt_docs "$SAFE"; nt_meta "$SAFE/public"
+      nt_docs "$SAFE"; nt_meta "$SAFE/public"; nt_legal "$SAFE/public"
       cat > "$SAFE/public/_headers" <<'HDR'
 /*
   X-Content-Type-Options: nosniff
@@ -615,7 +705,36 @@ CSS
       exit 0
     fi
     mkdir -p "$SAFE/assets"
-    # — index.html : semantic, accessible, zero render-blocking fonts, deferred JS —
+    # — assets/hero.svg : original lightweight illustration (real image, scalable, responsive) —
+    cat > "$SAFE/assets/hero.svg" <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-label="Abstract product illustration">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#6d4aff"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#35e8ff"/><stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="480" rx="28" fill="#0b1020"/>
+  <circle cx="470" cy="150" r="150" fill="url(#g1)" opacity="0.5"/>
+  <circle cx="180" cy="360" r="120" fill="url(#g2)" opacity="0.35"/>
+  <g stroke="#ffffff" stroke-opacity="0.08">
+    <path d="M0 120H640M0 240H640M0 360H640M160 0V480M320 0V480M480 0V480"/>
+  </g>
+  <rect x="90" y="120" width="300" height="150" rx="16" fill="#15171d" stroke="#ffffff" stroke-opacity="0.12"/>
+  <rect x="112" y="146" width="150" height="14" rx="7" fill="url(#g2)"/>
+  <rect x="112" y="176" width="220" height="10" rx="5" fill="#ffffff" fill-opacity="0.18"/>
+  <rect x="112" y="196" width="180" height="10" rx="5" fill="#ffffff" fill-opacity="0.12"/>
+  <rect x="112" y="226" width="90" height="26" rx="13" fill="url(#g1)"/>
+  <rect x="300" y="250" width="250" height="120" rx="16" fill="#15171d" stroke="#ffffff" stroke-opacity="0.12"/>
+  <circle cx="335" cy="285" r="14" fill="url(#g1)"/>
+  <rect x="360" y="278" width="150" height="10" rx="5" fill="#ffffff" fill-opacity="0.18"/>
+  <rect x="322" y="320" width="206" height="10" rx="5" fill="#ffffff" fill-opacity="0.12"/>
+  <rect x="322" y="340" width="140" height="10" rx="5" fill="#ffffff" fill-opacity="0.10"/>
+</svg>
+SVG
+    # — index.html : rich, responsive, real sections + imagery —
     cat > "$SAFE/index.html" <<HTML
 <!DOCTYPE html>
 <html lang="en">
@@ -623,13 +742,14 @@ CSS
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>$NAME</title>
-  <meta name="description" content="$NAME — built with nt-deploy. Fast, accessible, production-ready.">
-  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="$NAME — a fast, modern, accessible website built with nt-deploy.">
+  <meta name="theme-color" content="#ffffff">
   <meta name="color-scheme" content="light dark">
   <meta property="og:type" content="website">
   <meta property="og:title" content="$NAME">
-  <meta property="og:description" content="$NAME — fast, accessible, production-ready.">
+  <meta property="og:description" content="$NAME — fast, modern, accessible.">
   <meta property="og:url" content="$URL">
+  <meta property="og:image" content="$URL/assets/hero.svg">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="canonical" href="$URL">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -638,41 +758,153 @@ CSS
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
-  <header class="site-header"><strong>$NAME</strong></header>
+  <header class="nav" id="top">
+    <a class="brand" href="#top"><span class="brand__dot"></span> $NAME</a>
+    <nav class="nav__links" id="menu" aria-label="Primary">
+      <a href="#features">Features</a><a href="#showcase">Showcase</a><a href="#contact">Contact</a>
+    </nav>
+    <a class="btn btn--sm" href="#contact">Get in touch</a>
+    <button class="nav__toggle" id="navToggle" aria-label="Menu" aria-expanded="false">☰</button>
+  </header>
+
   <main id="main">
     <section class="hero">
-      <h1>$NAME</h1>
-      <p>A fast, accessible starting point — scoring high on PageSpeed out of the box.</p>
-      <a class="cta" href="#">Get started</a>
+      <div class="hero__text reveal">
+        <p class="eyebrow">Welcome to $NAME</p>
+        <h1>Build something <span class="accent">people love</span>.</h1>
+        <p class="lede">A fast, modern, accessible starting point — responsive by default and
+          tuned for top PageSpeed scores. Replace this copy with your story.</p>
+        <div class="hero__cta">
+          <a class="btn" href="#contact">Get started</a>
+          <a class="btn btn--ghost" href="#features">Learn more →</a>
+        </div>
+      </div>
+      <img class="hero__art reveal" src="/assets/hero.svg" alt="" width="640" height="480" loading="eager">
+    </section>
+
+    <section class="trust"><span>Trusted by teams that ship</span>
+      <div class="trust__row" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    </section>
+
+    <section id="features" class="section">
+      <header class="section__head reveal"><p class="eyebrow">Features</p><h2>Everything you need, nothing you don't.</h2></header>
+      <div class="cards">
+        <article class="card reveal">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+          <h3>Fast by default</h3><p>No render-blocking fonts, deferred JS, optimized assets. Loads instantly.</p>
+        </article>
+        <article class="card reveal">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <h3>Responsive</h3><p>Looks right on every screen — mobile, tablet, desktop — out of the box.</p>
+        </article>
+        <article class="card reveal">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <h3>Accessible &amp; safe</h3><p>Semantic, keyboard-friendly, with secure headers configured.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="showcase" class="section section--split">
+      <div class="reveal"><p class="eyebrow">Showcase</p><h2>Show your work beautifully.</h2>
+        <p class="lede">Swap this illustration for a screenshot or photo. Keep images light —
+          run <code>nt-images</code> to convert them to WebP automatically.</p>
+        <a class="btn btn--ghost" href="#contact">See more →</a></div>
+      <img class="panel reveal" src="/assets/hero.svg" alt="" width="640" height="480" loading="lazy">
+    </section>
+
+    <section class="stats reveal">
+      <div><b>99+</b><span>PageSpeed score</span></div>
+      <div><b>0</b><span>tracking cookies</span></div>
+      <div><b>&lt;1s</b><span>to first paint</span></div>
+    </section>
+
+    <section id="contact" class="section cta-band reveal">
+      <h2>Ready to start?</h2>
+      <p class="lede">Tell us what you're building. We'll get back within a day.</p>
+      <a class="btn btn--lg" href="mailto:hello@example.com">hello@example.com</a>
     </section>
   </main>
-  <footer class="site-footer"><small>© <span id="y"></span> $NAME</small></footer>
+
+  <footer class="footer">
+    <div class="footer__brand"><span class="brand__dot"></span> $NAME</div>
+    <nav class="footer__links" aria-label="Legal">
+      <a href="/privacy.html">Privacy</a><a href="/cookie-policy.html">Cookies</a><a href="/terms.html">Terms</a>
+    </nav>
+    <p class="footer__meta">© <span id="y"></span> $NAME</p>
+  </footer>
   <script src="/app.js" defer></script>
 </body>
 </html>
 HTML
-    # — styles.css : system fonts (no web-font blocking), modern reset, dark-mode aware —
+    # — styles.css : rich, responsive, light theme (DESIGN.md defaults) —
     cat > "$SAFE/styles.css" <<'CSS'
 *,*::before,*::after{box-sizing:border-box;margin:0}
-:root{--bg:#0b1020;--fg:#e6f0ff;--muted:#9fb0d0;--accent:#6d4aff;--accent2:#35e8ff;--max:1080px}
-@media (prefers-color-scheme:light){:root{--bg:#ffffff;--fg:#0b1020;--muted:#5a6b88}}
+:root{--bg:#fff;--surface:#f6f7f9;--fg:#14181f;--muted:#5b6573;--border:#e5e8ec;
+ --primary:#2563eb;--primary-h:#1e51c8;--accent:#6d4aff;--accent2:#35e8ff;--max:1100px;--r:14px}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1020;--surface:#13182a;--fg:#e9eefb;--muted:#9fb0d0;--border:#222a44}}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
-body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--fg);
- line-height:1.6;min-height:100dvh;display:flex;flex-direction:column}
-img{max-width:100%;height:auto;display:block}
-.skip{position:absolute;left:-999px}.skip:focus{left:12px;top:12px;background:#fff;color:#000;padding:8px;border-radius:8px;z-index:10}
-.site-header{padding:18px clamp(16px,5vw,40px)}
-main{flex:1;width:100%;max-width:var(--max);margin:0 auto;padding:clamp(40px,9vw,110px) clamp(16px,5vw,40px)}
-.hero h1{font-size:clamp(2.4rem,8vw,4.4rem);line-height:1.05;letter-spacing:-.02em;
- background:linear-gradient(120deg,var(--accent2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero p{margin:18px 0 28px;color:var(--muted);font-size:clamp(1rem,2.6vw,1.3rem);max-width:60ch}
-.cta{display:inline-block;padding:14px 26px;border-radius:12px;text-decoration:none;font-weight:700;
- background:linear-gradient(120deg,var(--accent2),var(--accent));color:#04060f}
-.cta:focus-visible{outline:3px solid var(--accent2);outline-offset:3px}
-.site-footer{padding:24px clamp(16px,5vw,40px);color:var(--muted)}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased}
+img{max-width:100%;height:auto;display:block}a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:4px}
+.skip{position:absolute;left:-999px}.skip:focus{left:12px;top:12px;background:var(--fg);color:var(--bg);padding:8px 12px;border-radius:8px;z-index:30}
+.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.lede{color:var(--muted);font-size:clamp(1rem,2.2vw,1.2rem);max-width:60ch}
+h1,h2,h3{letter-spacing:-.02em;line-height:1.08}h2{font-size:clamp(1.7rem,4.4vw,2.5rem)}h3{font-size:1.15rem}
+.accent{background:linear-gradient(120deg,var(--primary),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--primary);color:#fff;font-weight:600;font-size:15px;padding:12px 20px;border-radius:10px;border:0;cursor:pointer;transition:.15s;box-shadow:0 6px 22px rgba(37,99,235,.25)}
+.btn:hover{background:var(--primary-h);transform:translateY(-1px)}
+.btn--sm{padding:8px 15px;font-size:14px}.btn--lg{padding:15px 28px;font-size:16px}
+.btn--ghost{background:transparent;color:var(--fg);box-shadow:inset 0 0 0 1px var(--border)}
+.btn--ghost:hover{background:var(--surface)}
+.nav{display:flex;align-items:center;gap:22px;max-width:var(--max);margin:0 auto;padding:16px clamp(16px,5vw,40px)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700}
+.brand__dot{width:11px;height:11px;border-radius:50%;background:var(--primary);box-shadow:0 0 12px var(--primary)}
+.nav__links{display:flex;gap:24px;margin-left:auto;font-size:14px;color:var(--muted)}
+.nav__links a:hover{color:var(--fg)}.nav__toggle{display:none;margin-left:auto;background:0;border:0;font-size:22px;color:var(--fg);cursor:pointer}
+main{max-width:var(--max);margin:0 auto;padding:0 clamp(16px,5vw,40px)}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(28px,5vw,56px);align-items:center;padding:clamp(40px,8vw,96px) 0}
+.hero h1{font-size:clamp(2.4rem,7vw,4rem);margin-bottom:18px}
+.hero__cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:26px}
+.hero__art{width:100%;border-radius:var(--r);box-shadow:0 30px 70px rgba(0,0,0,.18)}
+.trust{max-width:var(--max);margin:0 auto;padding:8px clamp(16px,5vw,40px) 24px;color:var(--muted);font-size:13px;text-align:center}
+.trust__row{display:flex;justify-content:center;gap:30px;margin-top:14px;flex-wrap:wrap}
+.trust__row i{width:78px;height:22px;border-radius:6px;background:var(--border)}
+.section{padding:clamp(48px,9vw,104px) 0;border-top:1px solid var(--border)}
+.section__head{margin-bottom:clamp(26px,5vw,44px)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.card{border:1px solid var(--border);border-radius:var(--r);padding:26px;background:var(--surface);transition:.2s}
+.card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.10)}
+.ic{width:30px;height:30px;color:var(--primary);margin-bottom:14px}
+.card h3{margin-bottom:8px}.card p{color:var(--muted);font-size:.96rem}
+.section--split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,6vw,60px);align-items:center}
+.section--split h2{margin:12px 0 14px}.section--split .btn{margin-top:20px}
+.panel{width:100%;border-radius:var(--r);border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,.12)}
+code{font-family:ui-monospace,Menlo,monospace;background:var(--surface);padding:2px 6px;border-radius:6px;font-size:.9em}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:clamp(40px,7vw,80px) 0;border-top:1px solid var(--border);text-align:center}
+.stats b{display:block;font-size:clamp(1.8rem,5vw,2.8rem);background:linear-gradient(120deg,var(--primary),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.stats span{color:var(--muted);font-size:.9rem}
+.cta-band{text-align:center}.cta-band .lede{margin:14px auto 26px}
+.footer{max-width:var(--max);margin:0 auto;padding:30px clamp(16px,5vw,40px) 48px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:16px;align-items:center;color:var(--muted);font-size:14px}
+.footer__brand{display:flex;align-items:center;gap:8px;color:var(--fg);font-weight:700}
+.footer__links{display:flex;gap:18px;margin:0 auto}.footer__links a:hover{color:var(--fg)}
+.legal{max-width:760px;margin:0 auto;padding:clamp(28px,6vw,64px) clamp(16px,5vw,40px)}
+.legal h1{margin:8px 0 4px}.legal h2{font-size:1.2rem;margin:26px 0 8px}.legal p,.legal li{color:var(--muted)}
+.legal__date{color:var(--muted);font-size:14px}.legal ul{margin:8px 0 8px 20px}
+.legal__note{border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:12px 14px;margin:14px 0;font-size:14px}
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}.reveal.in{opacity:1;transform:none}
+@media (max-width:760px){.hero{grid-template-columns:1fr}.section--split{grid-template-columns:1fr}.nav__links{display:none}.nav__toggle{display:block}
+ .nav__links.open{display:flex;position:absolute;left:0;right:0;top:62px;flex-direction:column;gap:0;background:var(--bg);border-bottom:1px solid var(--border);padding:8px 24px}.nav__links.open a{padding:10px 0}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal{opacity:1;transform:none}}
 CSS
-    echo 'document.getElementById("y").textContent=new Date().getFullYear();' > "$SAFE/app.js"
+    cat > "$SAFE/app.js" <<'JS'
+document.getElementById("y").textContent = new Date().getFullYear();
+// mobile nav
+var tg = document.getElementById("navToggle"), menu = document.getElementById("menu");
+if (tg) tg.addEventListener("click", function(){ var o = menu.classList.toggle("open"); tg.setAttribute("aria-expanded", o); });
+// reveal on scroll
+var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target);} }); }, {threshold:.12});
+document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
+JS
     nt_docs "$SAFE"
     # — Cloudflare _headers : security + long-cache (plain stack) —
     cat > "$SAFE/_headers" <<'HDR'
@@ -689,9 +921,9 @@ CSS
 /app.js
   Cache-Control: public, max-age=31536000, immutable
 HDR
-    nt_meta "$SAFE"
+    nt_meta "$SAFE"; nt_legal "$SAFE"
     ok "Created premium starter ${BOLD}$SAFE/${NC} ${DIM}(plain HTML/CSS/JS)${NC}"
-    echo -e "   ${DIM}files:${NC} index.html · styles.css · app.js · DESIGN.md · AGENTS.md · CLAUDE.md · _headers · robots.txt · sitemap.xml · site.webmanifest · favicon.svg · 404.html"
+    echo -e "   ${DIM}files:${NC} index.html · styles.css · app.js · assets/hero.svg · DESIGN.md · AGENTS.md · CLAUDE.md · privacy/cookie/terms · _headers · robots · sitemap · manifest · favicon · 404"
     echo -e "   ${DIM}preview:${NC} nt-serve $SAFE   ${DIM}·  ship:${NC} nt-push $SAFE $SAFE   ${DIM}·  audit:${NC} nt-audit $SAFE"
     [ -n "$DESIGN_BRAND" ] && { "$0" design add "$DESIGN_BRAND" "$SAFE/DESIGN.md"; rm -f "$SAFE/DESIGN.md.bak"; }
     nt_devserve "$SAFE" plain "$SERVE"
@@ -796,6 +1028,23 @@ CSS
       echo "$BIG" | while read -r f; do [ -n "$f" ] && echo -e "   ${DIM}$(human_size "$(wc -c < "$f")")  ${f#./}${NC}"; done
       echo -e "   Fix (keeps quality, rewrites HTML refs):  ${BLUE}nt-images .${NC}"
     fi
+    ;;
+
+  assets|brand)   # discover existing brand assets (logos, images, fonts, colors)
+    DIR="${1:-.}"; [ -d "$DIR" ] || { err "Folder '$DIR' not found"; exit 1; }
+    info "🎨 Brand & asset scan in ${BOLD}$DIR${NC}:"
+    imgs=$(find "$DIR" -type f \( -iname '*.svg' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' -o -iname '*.avif' -o -iname '*.gif' -o -iname '*.ico' \) ! -path '*/node_modules/*' 2>/dev/null)
+    logos=$(echo "$imgs" | grep -iE 'logo|brand|mark' )
+    fonts=$(find "$DIR" -type f \( -iname '*.woff' -o -iname '*.woff2' -o -iname '*.ttf' -o -iname '*.otf' \) ! -path '*/node_modules/*' 2>/dev/null)
+    srcf=$(find "$DIR" -type f \( -iname '*.ai' -o -iname '*.eps' -o -iname '*.psd' -o -iname '*.sketch' -o -iname '*.fig' \) 2>/dev/null)
+    echo -e "   ${BOLD}Logos / brand marks:${NC}"; [ -n "$logos" ] && echo "$logos" | sed 's#^#     #' || echo -e "     ${DIM}none found — ask the client for a logo${NC}"
+    echo -e "   ${BOLD}Images:${NC} $(echo "$imgs" | grep -c . | tr -d ' ') file(s)"
+    raster=$(echo "$imgs" | grep -iE '\.(png|jpe?g|gif)$')
+    [ -n "$raster" ] && echo -e "     ${YELLOW}↳ raster images present — convert to WebP: nt-images $DIR${NC}"
+    echo -e "   ${BOLD}Fonts:${NC}"; [ -n "$fonts" ] && echo "$fonts" | sed 's#^#     #' || echo -e "     ${DIM}none (system fonts)${NC}"
+    [ -n "$srcf" ] && { echo -e "   ${BOLD}Brand source files:${NC}"; echo "$srcf" | sed 's#^#     #'; }
+    cols=$(grep -rhoiE '#[0-9a-f]{6}' "$DIR" --include='*.css' --include='*.svg' 2>/dev/null | tr 'A-F' 'a-f' | sort | uniq -c | sort -rn | head -6)
+    [ -n "$cols" ] && { echo -e "   ${BOLD}Most-used colors:${NC}"; echo "$cols" | sed 's#^#     #'; }
     ;;
 
   clean)
@@ -953,6 +1202,7 @@ ${BOLD}TOOLKIT${NC} ${DIM}(works without Cloudflare too)${NC}
   nt-qr [url|client]         QR code in the terminal
   nt-clean                   Remove dist/build/cache
   nt-doctor                  Environment diagnostics
+  nt-assets [dir]            Scan for existing brand assets (logos, images, fonts, colors)
   nt-notes <client> ["…"]    Per-client notes (view/add)
   nt-card [url|client]       ${MAGENTA}🧪 beta${NC} — a shareable one-pager (HTML + PDF) to send a client
   nt-gui [port]              Lightweight browser GUI
