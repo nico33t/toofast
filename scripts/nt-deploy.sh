@@ -1006,19 +1006,26 @@ code{font-family:ui-monospace,Menlo,monospace;background:var(--surface);padding:
 .legal h1{margin:8px 0 4px}.legal h2{font-size:1.2rem;margin:26px 0 8px}.legal p,.legal li{color:var(--muted)}
 .legal__date{color:var(--muted);font-size:14px}.legal ul{margin:8px 0 8px 20px}
 .legal__note{border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:12px 14px;margin:14px 0;font-size:14px}
-.reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}.reveal.in{opacity:1;transform:none}
+.reveal{opacity:1}.js .reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}.js .reveal.in{opacity:1;transform:none}
 @media (max-width:760px){.hero{grid-template-columns:1fr}.section--split{grid-template-columns:1fr}.nav__links{display:none}.nav__toggle{display:block}
  .nav__links.open{display:flex;position:absolute;left:0;right:0;top:62px;flex-direction:column;gap:0;background:var(--bg);border-bottom:1px solid var(--border);padding:8px 24px}.nav__links.open a{padding:10px 0}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal{opacity:1;transform:none}}
 CSS
     cat > "$SAFE/app.js" <<'JS'
+// progressive enhancement: content is visible without JS; JS only adds motion
+document.documentElement.classList.add("js");
 document.getElementById("y").textContent = new Date().getFullYear();
 // mobile nav
 var tg = document.getElementById("navToggle"), menu = document.getElementById("menu");
 if (tg) tg.addEventListener("click", function(){ var o = menu.classList.toggle("open"); tg.setAttribute("aria-expanded", o); });
-// reveal on scroll
-var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target);} }); }, {threshold:.12});
-document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
+// reveal on scroll (with a safety net so content is never left hidden)
+var els = document.querySelectorAll(".reveal");
+function showAll(){ els.forEach(function(el){ el.classList.add("in"); }); }
+if ("IntersectionObserver" in window) {
+  var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target);} }); }, {rootMargin:"0px 0px -8% 0px"});
+  els.forEach(function(el){ io.observe(el); });
+  setTimeout(showAll, 1500);
+} else { showAll(); }
 JS
     nt_docs "$SAFE"
     # — Cloudflare _headers : security + long-cache (plain stack) —
