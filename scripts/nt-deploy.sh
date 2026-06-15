@@ -130,7 +130,8 @@ nt_docs(){
 > the user (see "9. Agent Prompt Guide"). For a real brand starting point: \`nt-design add <brand>\`.
 
 ## 1. Visual Theme & Atmosphere
-- Clean, modern, content-first: generous whitespace, restrained color, strong type hierarchy. (edit)
+- Purpose: in one line, what this site must represent and the single primary action (the goal). (edit)
+- Direction: clean, modern, content-first — generous whitespace, restrained color, strong type hierarchy. (edit)
 - Calm and trustworthy; a single accent color used sparingly for actions. (edit)
 
 ## 2. Color Palette & Roles
@@ -158,11 +159,13 @@ nt_docs(){
 - Cards: white/--surface, 1px --border, radius 12px, shadow-sm, 20–24px padding.
 - Forms/inputs: 1px --border, radius 8px, padding .6rem .8rem; focus = 2px --primary ring; error = --error border + helper text.
 - Navigation: sticky top, backdrop-blur, 1px bottom border; mobile = hamburger → panel.
+- Motion: sober — short (120–200ms), eased, purposeful (feedback/orientation only); honor \`prefers-reduced-motion\`; never decorative or distracting.
 
 ## 5. Layout Principles
 - Container max-width 1080px, centered; side padding \`clamp(16px,5vw,40px)\`.
 - 12-column mental grid; card lists via \`auto-fit minmax(260px,1fr)\`.
 - Spacing rhythm: 8px base (8/12/16/24/32/48/64).
+- Padding & whitespace: consistent rhythm on the 8px scale; nothing cramped or arbitrary; let key elements breathe.
 
 ## 6. Depth & Elevation
 - Shadows: sm \`0 1px 2px rgba(0,0,0,.06)\` · md \`0 6px 20px rgba(0,0,0,.10)\` · lg \`0 18px 50px rgba(0,0,0,.16)\`.
@@ -184,6 +187,10 @@ Instructions for AI agents reading this file:
   \`nt-design add <brand>\` to start from a real brand template.
 - Ask the user: 1) feeling/aesthetic? 2) brand colors/logo? 3) typography vibe? 4) reference
   sites? 5) light, dark, or both? 6) audience and main devices?
+- Before building, reason explicitly about: the DIRECTION and what the site must represent;
+  the user's EYE PATH (F/Z reading pattern, one clear primary CTA above the fold, visual
+  hierarchy by size/contrast/space); UNIFORMITY (reuse the same components, spacing and voice
+  everywhere); MOTION sobriety; correct PADDING rhythm. Leave nothing to chance — keep it SIMPLE.
 - Use ONLY values defined above; never introduce off-scale colors, fonts, or spacing.
 - Validate every component against section 7 and accessibility (contrast ≥ 4.5:1, visible focus).
 MD

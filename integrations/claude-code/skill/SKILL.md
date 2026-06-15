@@ -33,6 +33,29 @@ brand template with `nt-design add <brand>` (e.g. stripe, linear, notion). Alway
 Scaffold flags: `--plain` / `--vite`, `--serve` / `--no-serve`, `--design=<brand>` (start the
 DESIGN.md from a brand template, e.g. `--design=stripe`).
 
+## Workflow: build a client site (follow this)
+1. **Understand the client.** Ask: what does the business do / industry? Audience and goal
+   (leads, sales, bookings, info)? **Do they already have a website?** (get the URL). Brand
+   assets (logo, colors, fonts, tone)? Which pages and languages? Reference sites they like?
+2. **If they already have a site**, inspect it: `nt-check <url>` and `nt-audit <url>` to learn
+   its structure/quality and what to improve.
+3. **Design.** Fill `DESIGN.md` from their brand, or seed from a template (`nt-design add <brand>`),
+   or keep the rich defaults — confirm the direction with the user; if they can't answer, propose
+   sensible defaults, don't stall.
+4. **Scaffold.** `nt-create <client>` (ask HTML/CSS/JS vs Vite; offer a live-reload dev server;
+   `--design=<brand>` to seed the DESIGN.md).
+5. **Build** strictly against `DESIGN.md`: accessible, standards-based, PageSpeed-first. Keep the
+   output portable (plain HTML/CSS/JS or Vite) so it works with any tool.
+6. **Images.** Check the project for raster images (PNG/JPEG). If any, run `nt-images <dir>` to
+   convert them to WebP (keeps quality, rewrites references). `nt-doctor` also flags heavy images.
+7. **Preview & iterate** with `nt-edit <dir>`: live reload (CSS hot-swaps with no full refresh),
+   in-browser editor, and click-to-source (🎯) to jump from any element to its line.
+8. **Audit.** `nt-audit <dir|client>` — aim for ≥ 95 on mobile; fix issues.
+9. **When you judge it's ready, ASK the user whether to publish it to Cloudflare so the client can
+   preview it.** If yes: `nt-push <dir> <client>` → the live URL becomes
+   `<client>.<project>.pages.dev` (e.g. `tynk.nicolatomassini.pages.dev`). Share it, or
+   `nt-card <client>` (one-pager) / `nt-qr <client>` (QR).
+
 ## All commands
 **Deploy** — `nt-push <dir> <client>` · `nt-ship <client>` (build+deploy+QR+open) · `nt-bp <client>` (build+push)
 **Time Machine** — `nt-rollback <client> [ts]` · `nt-snapshots <client>`

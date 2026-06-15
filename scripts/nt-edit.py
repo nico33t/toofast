@@ -38,6 +38,21 @@ def list_files():
     out.sort()
     return out
 
+def find_text(q):
+    q = " ".join((q or "").split())[:80]
+    for needle in (q.lower(), q.lower()[:35]):
+        if len(needle) < 3:
+            continue
+        for rel in list_files():
+            try:
+                with open(os.path.join(ROOT, rel), encoding="utf-8", errors="replace") as fh:
+                    for i, line in enumerate(fh, 1):
+                        if needle in " ".join(line.split()).lower():
+                            return {"path": rel, "line": i}
+            except OSError:
+                continue
+    return None
+
 def latest_mtime():
     m = 0.0
     for base, dirs, files in os.walk(ROOT):
@@ -58,6 +73,7 @@ font:600 13px system-ui;touch-action:none;transition:right .22s ease,top .22s ea
 #nt-fab .grip{cursor:grab;color:#7a7a85;padding:0 4px;user-select:none}#nt-fab.drag .grip{cursor:grabbing}
 #nt-fab button{border:0;border-radius:8px;padding:8px 11px;font:inherit;cursor:pointer;background:#2a2a31;color:#fff}
 #nt-fab button:hover{background:#3a3a44}
+#nt-fab button.on{background:#6d4aff;color:#fff}
 #nt-fab .stop{background:#3a1620;color:#ff8a9b}#nt-fab .stop:hover{background:#52202c}
 #nt-ed{position:fixed;inset:auto 0 0 0;height:46vh;z-index:2147483647;background:#0b1020;color:#e6f0ff;
 display:none;grid-template-columns:230px 1fr;font:13px system-ui;border-top:2px solid #6d4aff}
@@ -75,7 +91,7 @@ font:13px/1.5 ui-monospace,monospace;tab-size:2}
 #nt-ed .save{background:#6d4aff;color:#fff}#nt-ed .x{background:#243049;color:#cdd}
 #nt-ed .lang{background:#11203a;color:#7fdcff}
 </style>
-<div id="nt-fab"><span class="grip" title="drag me">⠿</span><button id="nt-ed-open">✎ Edit</button><button class="stop" id="nt-ed-stop" title="Stop live server">⏻ Stop</button></div>
+<div id="nt-fab"><span class="grip" title="drag me">⠿</span><button id="nt-ed-pick" title="Click an element on the page to jump to its source line">🎯</button><button id="nt-ed-open">✎ Edit</button><button class="stop" id="nt-ed-stop" title="Stop live server">⏻ Stop</button></div>
 <div id="nt-ed"><div class="side"><b>FILES</b><div id="nt-ed-list"></div></div>
 <div class="main"><div class="bar"><span class="p" id="nt-ed-path">no file</span>
 <button class="lang" id="nt-ed-lang" style="display:none"></button>
@@ -84,7 +100,10 @@ font:13px/1.5 ui-monospace,monospace;tab-size:2}
 <script>
 (function(){var T="__NT_TOKEN__",cur=null,$=function(i){return document.getElementById(i)};
 var lang=new URLSearchParams(location.search).get("lang")||document.documentElement.lang||"";
-new EventSource("/__nt/reload?t="+T).onmessage=function(){location.reload()};
+new EventSource("/__nt/reload?t="+T).onmessage=function(ev){
+ if(ev.data=="css"){[].forEach.call(document.querySelectorAll('link[rel="stylesheet"]'),function(l){
+  var u=(l.href||"").split("?")[0];if(u)l.href=u+"?v="+Date.now();});}
+ else location.reload();};
 var fab=$("nt-fab");
 $("nt-ed-open").onclick=function(){$("nt-ed").classList.toggle("open");if($("nt-ed").classList.contains("open"))load()};
 $("nt-ed-x").onclick=function(){$("nt-ed").classList.remove("open")};
@@ -106,13 +125,28 @@ function load(){fetch("/__nt/files?t="+T).then(function(r){return r.json()}).the
   d.onclick=function(){open_(f,d)};L.appendChild(d);
   if(lang&&/\\.json$/.test(f)&&f.toLowerCase().indexOf(lang.toLowerCase())>=0)pick=[f,d];});
  if(pick){open_(pick[0],pick[1]);$("nt-ed-lang").style.display="";$("nt-ed-lang").textContent="lang: "+lang}});}
-function open_(f,el){cur=f;[].forEach.call(document.querySelectorAll("#nt-ed .f"),function(x){x.classList.remove("on")});
- if(el)el.classList.add("on");$("nt-ed-path").textContent=f;
- fetch("/__nt/file?t="+T+"&path="+encodeURIComponent(f)).then(function(r){return r.text()}).then(function(t){$("nt-ed-ta").value=t});}
+function open_(f,el){[].forEach.call(document.querySelectorAll("#nt-ed .f"),function(x){x.classList.remove("on")});
+ if(el)el.classList.add("on");openAt(f,1);}
+function openAt(f,line){cur=f;$("nt-ed-path").textContent=f+(line>1?":"+line:"");
+ fetch("/__nt/file?t="+T+"&path="+encodeURIComponent(f)).then(function(r){return r.text()}).then(function(txt){
+  var ta=$("nt-ed-ta");ta.value=txt;
+  if(line>1){var ls=txt.split("\\n"),s=0,i;for(i=0;i<line-1&&i<ls.length;i++)s+=ls[i].length+1;
+   var e=s+(ls[line-1]?ls[line-1].length:0);ta.focus();ta.setSelectionRange(s,e);
+   var lh=parseFloat(getComputedStyle(ta).lineHeight)||18;ta.scrollTop=Math.max(0,(line-3)*lh);}
+ });}
 function save(){if(!cur)return;fetch("/__nt/save",{method:"POST",headers:{"Content-Type":"application/json","X-NT-Token":T},
  body:JSON.stringify({path:cur,content:$("nt-ed-ta").value})}).then(function(r){if(!r.ok)alert("save failed")});}
 $("nt-ed-save").onclick=save;
 document.addEventListener("keydown",function(e){if((e.metaKey||e.ctrlKey)&&e.key=="s"&&$("nt-ed").classList.contains("open")){e.preventDefault();save()}});
+// auto-save (debounced) → live reload makes edits feel real-time
+var asT;$("nt-ed-ta").addEventListener("input",function(){clearTimeout(asT);asT=setTimeout(save,700)});
+// click-to-source ("vibe coding"): pick an element on the page, jump to its file + line
+var inspect=false;
+$("nt-ed-pick").onclick=function(){inspect=!inspect;this.classList.toggle("on",inspect);document.body.style.cursor=inspect?"crosshair":""};
+document.addEventListener("click",function(e){if(!inspect)return;if(e.target.closest("#nt-ed")||e.target.closest("#nt-fab"))return;
+ e.preventDefault();e.stopPropagation();var t=(e.target.textContent||"").trim().replace(/\\s+/g," ").slice(0,80);if(!t)return;
+ fetch("/__nt/find?t="+T+"&q="+encodeURIComponent(t)).then(function(r){return r.json()}).then(function(m){
+  if(!m||!m.path)return;$("nt-ed").classList.add("open");openAt(m.path,m.line||1);});},true);
 })();
 </script>
 """
@@ -138,6 +172,9 @@ class H(BaseHTTPRequestHandler):
         if path == "/__nt/files":
             if not self._tok(q): return self._send(403, "forbidden")
             return self._send(200, json.dumps(list_files()), "application/json")
+        if path == "/__nt/find":
+            if not self._tok(q): return self._send(403, "forbidden")
+            return self._send(200, json.dumps(find_text(q.get("q", [""])[0]) or {}), "application/json")
         if path == "/__nt/file":
             if not self._tok(q): return self._send(403, "forbidden")
             f = self._resolve(q.get("path", [""])[0])
@@ -148,12 +185,24 @@ class H(BaseHTTPRequestHandler):
             if not self._tok(q): return self._send(403, "forbidden")
             self.send_response(200); self.send_header("Content-Type", "text/event-stream")
             self.send_header("Cache-Control", "no-cache"); self.end_headers()
-            last = latest_mtime()
+            def snap():
+                d = {}
+                for base, dirs, files in os.walk(ROOT):
+                    dirs[:] = [x for x in dirs if x not in SKIP_DIR and not x.startswith(".")]
+                    for f in files:
+                        try: d[os.path.join(base, f)] = os.path.getmtime(os.path.join(base, f))
+                        except OSError: pass
+                return d
+            prev = snap()
             try:
                 while True:
-                    time.sleep(0.7); m = latest_mtime()
-                    if m > last:
-                        last = m; self.wfile.write(b"data: reload\n\n"); self.wfile.flush()
+                    time.sleep(0.6); cur = snap()
+                    changed = [p for p, mt in cur.items() if prev.get(p) != mt] + [p for p in prev if p not in cur]
+                    if changed:
+                        exts = {os.path.splitext(p)[1].lower() for p in changed}
+                        prev = cur
+                        msg = "css" if exts and exts <= {".css"} else "reload"  # CSS-only → hot swap, no full reload
+                        self.wfile.write(("data: " + msg + "\n\n").encode()); self.wfile.flush()
                     else:
                         self.wfile.write(b": ping\n\n"); self.wfile.flush()
             except Exception:
