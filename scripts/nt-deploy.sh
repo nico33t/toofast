@@ -1478,6 +1478,49 @@ HTML
     ok "Synced to s3://$BUCKET${AWS_S3_URL:+ ($AWS_S3_URL)}"
     ;;
 
+  # ───── EXPORT TO WORDPRESS (installable theme) ─────
+  wordpress|wp)
+    DIR="${1:-.}"; THEME=$(sanitize_branch "${2:-$(basename "$(cd "$DIR" 2>/dev/null && pwd)")}")
+    [ -d "$DIR" ] || { err "Folder '$DIR' not found"; exit 1; }
+    [ -f "$DIR/index.html" ] || { err "No index.html in '$DIR'"; exit 1; }
+    have zip || { err "'zip' required"; exit 1; }; have python3 || { err "python3 required"; exit 1; }
+    WORK=$(mktemp -d); TD="$WORK/$THEME"; mkdir -p "$TD"
+    cp -R "$DIR"/. "$TD"/ 2>/dev/null; rm -f "$TD"/index.html
+    python3 - "$DIR/index.html" "$TD/index.php" <<'PY'
+import sys, re
+src = open(sys.argv[1], encoding="utf-8").read()
+u = "<?php echo get_template_directory_uri(); ?>"
+# drop the static css/js tags (functions.php enqueues them)
+src = re.sub(r'\s*<link rel="stylesheet"[^>]*>', '', src)
+src = re.sub(r'\s*<script src="/app\.js"[^>]*></script>', '', src)
+# rewrite remaining root-absolute asset URLs to the theme dir
+src = re.sub(r'(href|src)="/(?!/)', lambda m: m.group(1) + '="' + u + '/', src)
+src = src.replace('</head>', '<?php wp_head(); ?>\n</head>', 1)
+src = src.replace('</body>', '<?php wp_footer(); ?>\n</body>', 1)
+open(sys.argv[2], "w", encoding="utf-8").write(src)
+PY
+    cat > "$TD/style.css" <<CSS
+/*
+Theme Name: $THEME
+Author: TooFast
+Version: 1.0
+Description: Static site exported to a WordPress theme by TooFast.
+*/
+CSS
+    cat > "$TD/functions.php" <<'PHP'
+<?php
+add_action('wp_enqueue_scripts', function () {
+  $u = get_template_directory_uri();
+  wp_enqueue_style('toofast-site', $u . '/styles.css', [], '1.0');
+  wp_enqueue_script('toofast-site', $u . '/app.js', [], '1.0', true);
+});
+PHP
+    ( cd "$WORK" && zip -rq "$OLDPWD/$THEME-wp-theme.zip" "$THEME" -x '*.DS_Store' )
+    rm -rf "$WORK"
+    ok "Created ${BOLD}$THEME-wp-theme.zip${NC} ($(human_size "$(wc -c < "$THEME-wp-theme.zip")"))"
+    echo -e "   ${DIM}WordPress → Appearance → Themes → Add New → Upload Theme → Activate.${NC}"
+    ;;
+
   # ───── SETUP ─────
   init)
     check_wrangler; banner
@@ -1507,6 +1550,7 @@ ${BOLD}DEPLOY${NC}
   nt-ship [client]           ${MAGENTA}★${NC} build + deploy + QR + open, all in one
   nt-bp [client]             Shortcut for 'nt-push --build'
   nt-vercel [dir] [--prod]   Deploy to Vercel  ·  nt-aws <dir> <bucket>  Deploy to AWS S3/CloudFront
+  nt-wordpress <dir> [name]  Export a static site as an installable WordPress theme (.zip)
 
 ${BOLD}TIME MACHINE${NC} ${MAGENTA}(kill feature)${NC}
   nt-rollback [client] [ts]  Restore a previous deploy (impossible with wrangler alone!)
